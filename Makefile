@@ -1,5 +1,7 @@
 SHELL := /bin/bash
 
+
+# Variables expanded in place
 wrapper_js 	:= src/wrapper.js
 
 exported_js := src/exported.js
@@ -8,11 +10,32 @@ parser_js 	:= src/parser.js
 engine_js 	:= src/engine.js
 
 base				:= lib/selector-engine
-target			:= $(base).js
-target_min	:= $(base).min.js
+full				:= $(base).js
+compiled		:= $(base).min.js
 
 debug_mode	:= DEBUG_MODE=false
+comp_level	:= WHITESPACE_ONLY
+formatting	:= --formatting PRETTY_PRINT
 
+
+# Variables expanded at point of use
+closure_params = java -jar '$(CLOSURE)' \
+  --js $(exported_js) $(lexer_js) $(parser_js) $(engine_js) \
+  --output_wrapper_file $(wrapper_js) \
+	--js_output_file $@ \
+	--compilation_level $(comp_level) \
+	--assume_function_wrapper \
+	--define $(debug_mode) \
+  --language_in ECMASCRIPT6 \
+  --language_out ECMASCRIPT3 \
+	$(formatting)
+
+gzip_closure = gzip --keep --best $@; \
+	echo ...$@ complete; \
+	echo
+
+
+# Rules
 
 .PHONY: all
 
@@ -27,40 +50,30 @@ set_debug:
 	$(eval debug_mode := DEBUG_MODE=true)
 
 
-$(target): $(wrapper_js)  $(close_js)
+set_advanced:
+	$(eval comp_level := ADVANCED)
+	$(eval formatting := )
+
+
+$(full):
 	mkdir -p $(dir $@)
-	java -jar '$(CLOSURE)' \
-  --js $(exported_js) $(lexer_js) $(parser_js) $(engine_js) \
-  --js_output_file $@ \
-  --output_wrapper_file $(wrapper_js) \
-	--assume_function_wrapper \
-  --define $(debug_mode) \
-  --language_in ECMASCRIPT6 \
-  --language_out ECMASCRIPT3 \
-  --compilation_level WHITESPACE_ONLY \
-  --formatting PRETTY_PRINT
-	gzip --keep --best $@
+	@echo Creating $@...
+	$(closure_params)
+	$(gzip_closure)
 
 
-$(target_min): $(target)
-	java -jar '$(CLOSURE)' \
-  --js $(exported_js) $(lexer_js) $(parser_js) $(engine_js) \
-  --js_output_file $(target_min) \
-  --output_wrapper_file $(wrapper_js) \
-	--assume_function_wrapper \
-  --define $(debug_mode) \
-  --language_in ECMASCRIPT6 \
-  --language_out ECMASCRIPT3 \
-  --compilation_level ADVANCED
-	gzip --keep --best $@
+$(compiled): $(full) set_advanced
+	@echo Compiling $@...
+	$(closure_params)
+	$(gzip_closure)
 
 
-build: $(target) $(target_min)
+build: $(compiled)
 
 
 #lint:
-#	touch $(target)
-#	eslint --quiet --fix $(target)
+#	touch $(full)
+#	eslint --quiet --fix $(full)
 
 clean:
 	rm -f $(base)*

@@ -1,10 +1,10 @@
 
 var testElem = document.createElement("div")
+
+const tempTagName = "div123"
+
 // Needed for old IE--v
-
-const randTagName = "x" + ("00000000" + ~~(Math.random() * 1e9)).slice(-9)
-
-testElem.innerHTML = "1<" + randTagName + "></" + randTagName + ">"
+testElem.innerHTML = "1<" + tempTagName + "></" + tempTagName + ">"
 
 const needTagFix = testElem.getElementsByTagName("*")[0].nodeName.charAt(0) === '/'
 

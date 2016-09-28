@@ -169,7 +169,7 @@ Lexer.prototype.next = function() {
     return this.curr
   }
 
-  if (this.curr === null) { // May have been manually set to `null` below
+  if (this.curr == null) { // May have been manually set to `null` below
     return this.curr
   }
 
@@ -191,13 +191,12 @@ Lexer.prototype.next = function() {
   switch(r) {
   // Whitespace
   case ' ': case '\t': case '\n':
-
     for (;;) { // Discard any subsequent whitespace
-      switch(this.sel.charAt(this.i + 1)) {
+      switch(this.sel.charAt(this.i += 1)) {
       case ' ': case '\t': case '\n':
-        this.i+=1 // Discard
         continue
       }
+      this.i-=1 // Reset to before the last non-space
       break
     }
 
@@ -230,7 +229,7 @@ Lexer.prototype.next = function() {
     }
 
     name = (re_consumeName.exec(
-      this.sel.slice(this.i+1)) || arrEmptyString)[0].toLowerCase()
+      this.sel.slice(this.i+1)) || arrEmptyString).charAt(0).toLowerCase()
 
     this.i += name.length
 
@@ -430,11 +429,11 @@ Lexer.prototype.makeNth = function(n) {
       n.a = aStr === '-' ? -1 : 1
 
     } else {
-      n.a = parseInt(aStr, 10)
+      n.a = +aStr
     }
 
     if (bStr) {
-      n.b = parseInt(bStr, 10)
+      n.b = +bStr
     }
 
     if (DEBUG_MODE && (isNaN(n.a) || isNaN(n.b))) {

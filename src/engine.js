@@ -1,19 +1,20 @@
 
 var testElem = document.createElement("div")
-,   needCommentFilter = testElem.appendChild(document.createComment(""))
-                                .parentNode
-                                .getElementsByTagName("*").length !== 0
-
-,   needTagFix = false
-,   randTagName = "x" + ("00000000" + ~~(Math.random() * 1e9)).slice(-9)
-
-,   re_twoSpaceOnceSpaceOrEmpty = /^\s\s?$|^$/
-
-
 // Needed for old IE--v
+
+const randTagName = "x" + ("00000000" + ~~(Math.random() * 1e9)).slice(-9)
+
 testElem.innerHTML = "1<" + randTagName + "></" + randTagName + ">"
 
-needTagFix = testElem.getElementsByTagName("*")[0].nodeName.charAt(0) === '/'
+const needTagFix = testElem.getElementsByTagName("*")[0].nodeName.charAt(0) === '/'
+
+testElem.innerHTML = ""
+
+const needCommentFilter = testElem.appendChild(document.createComment(""))
+        .parentNode
+        .getElementsByTagName("*").length !== 0
+
+const re_twoSpaceOnceSpaceOrEmpty = /^\s\s?$|^$/
 
 testElem = null
 
@@ -31,21 +32,21 @@ function _matches(origEl, subGroup) {
 
   SUBGROUP_LOOP:
   for (var i = 0; i < subGroup.length; i+=1) {
-    var selObject = subGroup[i]
+    var selector = subGroup[i]
     ,   el = origEl
     ,   haltOnFail = false
     ,   lastCombinatorIdx = -1
 
 
     // Process starting at the end so that we're doing a RtoL evaluation.
-    for (var j = selObject.parts.length-1; j > -1; j-=1) {
-      var simple = selObject.parts[j]
+    for (var j = selector.parts.length-1; j > -1; j-=1) {
+      var part = selector.parts[j]
 
-      if (simple.kind === COMBINATOR) {
+      if (part.kind === COMBINATOR) {
       // If we have a combinator, traverse to the related element
         haltOnFail = false
 
-        switch (simple.subKind) {
+        switch (part.subKind) {
         case NO_COMB:           haltOnFail = true; break // Far right end
         case CHILD_COMB:        haltOnFail = true; /*falls through*/
         case DESCENDANT_COMB:   el = el.parentNode; break
@@ -71,14 +72,14 @@ function _matches(origEl, subGroup) {
       var temp = ""
       ,   thisSeqQualName = ""
 
-      switch (simple.kind) {
+      switch (part.kind) {
       case UNIVERSAL_TAG_TOKEN:
         thisSeqQualName = ""
         continue // Always matches
 
       case TAG_TOKEN:
         temp = el.nodeName.toUpperCase()
-        thisSeqQualName = simple.value
+        thisSeqQualName = part.value
 
         if (needTagFix && temp.charAt(0) === '/') {
           temp = temp.slice(1)
@@ -87,11 +88,11 @@ function _matches(origEl, subGroup) {
         break
 
       case CLASS_TOKEN:
-        if (fieldMatch(el.className, simple.value)) { continue }
+        if (fieldMatch(el.className, part.value)) { continue }
         break
 
       case ID_TOKEN:
-        if (el.id === simple.value) { continue }
+        if (el.id === part.value) { continue }
         break
 
       // A selector that doesn't return any element (e.g. ::first-letter)
@@ -101,39 +102,39 @@ function _matches(origEl, subGroup) {
 
       // Simple pseudos
       case PSEUDO_TOKEN:
-        if (simple.subKind(el)) { continue }
+        if (part.subKind(el)) { continue }
         break
 
 
       // Function pseudos
       case PSEUDO_FUNCTION_TOKEN:
 
-        switch (simple.subKind) {
+        switch (part.subKind) {
         case NOT_TOKEN:
-          if (!_matches(el, simple.subSelector)) { continue }
+          if (!_matches(el, part.subSelector)) { continue }
           break
 
         case NTH_CHILD_TOKEN:
-          if (isNth(el, simple, "", false)) { continue }
+          if (isNth(el, part, "", false)) { continue }
           break
 
         case NTH_LAST_CHILD_TOKEN:
-          if (isNth(el, simple, "", true)) { continue }
+          if (isNth(el, part, "", true)) { continue }
           break
 
         case NTH_OF_TYPE_TOKEN: // First item in a sequence is always tag
-          if (isNth(el, simple, thisSeqQualName, false)) { continue }
+          if (isNth(el, part, thisSeqQualName, false)) { continue }
           break
 
         case NTH_LAST_OF_TYPE_TOKEN:
-          if (isNth(el, simple, thisSeqQualName, true)) { continue }
+          if (isNth(el, part, thisSeqQualName, true)) { continue }
           break
 
         case LANG_TOKEN:
           var tempEl = el
           while (tempEl && !tempEl.lang) { tempEl = tempEl.parentNode }
 
-          if (tempEl && dashMatch(tempEl.lang, simple.value)) { continue }
+          if (tempEl && dashMatch(tempEl.lang, part.value)) { continue }
           break
 
         default:
@@ -146,41 +147,41 @@ function _matches(origEl, subGroup) {
 
       // Attribute selectors
       case ATTR_TOKEN:
-        var attrVal = el.getAttribute(simple.name)
+        var attrVal = el.getAttribute(part.name)
 
         if (attrVal == null) {
           return false
         }
 
-        switch (simple.subKind) {
+        switch (part.subKind) {
         case EQUAL_ATTR_TOKEN:
-          if (attrVal === simple.value) { continue }
+          if (attrVal === part.value) { continue }
           break
 
         case PREFIX_MATCH_TOKEN:
-          if (attrVal.lastIndexOf(simple.value, 0) === 0) { continue }
+          if (attrVal.lastIndexOf(part.value, 0) === 0) { continue }
           break
 
         case SUFFIX_MATCH_TOKEN:
-          if (attrVal.lastIndexOf(simple.value) + simple.value.length ===
+          if (attrVal.lastIndexOf(part.value) + part.value.length ===
                                                             attrVal.length) {
             continue
           }
           break
 
         case DASH_MATCH_TOKEN:
-          if (dashMatch(attrVal, simple.value)) { continue }
+          if (dashMatch(attrVal, part.value)) { continue }
           break
 
         case INCLUDE_MATCH_TOKEN:
-          if (fieldMatch(attrVal, simple.value)) { continue }
+          if (fieldMatch(attrVal, part.value)) { continue }
           break
 
         case HAS_ATTR_TOKEN:
           continue // Already know it isn't null, so it has the attr
 
         case SUBSTRING_MATCH_TOKEN:
-          if (attrVal.indexOf(simple.value) !== -1) { continue }
+          if (attrVal.indexOf(part.value) !== -1) { continue }
           break
 
         default:
@@ -220,7 +221,7 @@ function _matches(origEl, subGroup) {
  * @return {!boolean}
  */
 function dashMatch(target, pattern) {
-  var last = target.charAt(pattern.length)
+  const last = target.charAt(pattern.length)
   return (!last || last === '-') && target.lastIndexOf(pattern, 0) === 0
 }
 
@@ -257,15 +258,15 @@ function fieldMatch(target, pattern) {
  * @return {!boolean}
  */
 function isNth(el, simple, nn, fromEnd) {
-  var nth = simple.a
+  const nth = simple.a
   ,   offset = simple.b
+  ,   cap = nth <= 0 ? offset : Infinity // Don't traverse farther than needed
 
   if (!el.parentNode || (nth <= 0 && offset <= 0)) {
     return false
   }
 
-  var cap = nth <= 0 ? offset : Infinity // Don't traverse farther than needed
-  ,   idx = 1 // 1-based index
+  var idx = 1 // 1-based index
   ,   curr = fromEnd ? el.parentNode.lastChild : el.parentNode.firstChild
 
   if (!curr) {
@@ -293,10 +294,10 @@ function isNth(el, simple, nn, fromEnd) {
 }
 
 
-var formControls = {
+const formControls = {
   "INPUT":1, "TEXTAREA":1, "SELECT":1, "BUTTON":1, "OPTION":1, "OPTGROUP":1
 }
-var hiddenOrButton = {
+const hiddenOrButton = {
   "hidden":1, "image": 1, "button": 1, "submit": 1, "reset": 1
 }
 
@@ -363,7 +364,7 @@ var pseudoClassFns = {
   "default-option": function(el) {
     if (el.defaultChecked || el.defaultSelected) { return true }
 
-    var sel = "BUTTON, INPUT[type=submit]"
+    const sel = "BUTTON, INPUT[type=submit]"
 
     return el.form && el.form.nodeType === 1 &&
             Query["matches"](el, sel) &&
@@ -444,7 +445,7 @@ var pseudoClassFns = {
             pseudoClassFns["last-child"](el)
   },
   "first-of-type": function(el) {
-    var name = el.nodeName.toUpperCase()
+    const name = el.nodeName.toUpperCase()
 
     while ((el = el.previousSibling) && (el.nodeType !== 1 ||
             el.nodeName.toUpperCase() !== name)) {
@@ -452,7 +453,7 @@ var pseudoClassFns = {
     return !el
   },
   "last-of-type": function(el) {
-    var name = el.nodeName.toUpperCase()
+    const name = el.nodeName.toUpperCase()
 
     while ((el = el.nextSibling) && (el.nodeType !== 1 ||
             el.nodeName.toUpperCase() !== name)) {
@@ -495,9 +496,9 @@ function hoverHelperSetup() {
   }
 
   // Try to force a "mouseover" event after the handler is set up.
-  var body = document.body
+  const body = document.body
   if (body) {
-    var sib = body.nextSibling
+    const sib = body.nextSibling
     ,   par = body.parentNode
 
     par.removeChild(body)

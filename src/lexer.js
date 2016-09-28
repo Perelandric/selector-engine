@@ -1,5 +1,7 @@
+const errInvalidSelector = new Error("Invalid selector")
+,   errInternal = new Error("Internal error")
 
-var NO_TOKEN = 0
+,   NO_TOKEN = 0
 ,   UNIVERSAL_TAG_TOKEN = 1
 ,   PSEUDO_FUNCTION_TOKEN = 2
 ,   WHITESPACE_TOKEN = 3
@@ -47,7 +49,7 @@ var NO_TOKEN = 0
 ,   COMBINATOR_NONE_REUSE = new Token(COMBINATOR)
 
 ,   UNIVERSAL_TAG_REUSE = new Token(UNIVERSAL_TAG_TOKEN)
-,   NO_TOKEN_REUSE = new Token(NO_TOKEN, "no-tok")
+//,   NO_TOKEN_REUSE = new Token(NO_TOKEN, "no-tok")
 ,   COMMA_TOKEN_REUSE = new Token(',', ',')
 ,   WHITESPACE_TOKEN_REUSE = new Token(WHITESPACE_TOKEN, ' ')
 
@@ -104,6 +106,27 @@ Token.prototype.a = 0
 Token.prototype.b = 0
 
 
+/*
+  const re_lex = new RegExp(
+    "^(?:" +
+      "([ \t\n]+)|" + // 1. Whitespace
+      "(,)|" +        // 2. Comma
+      "(>)|" +        // 3. Right angle bracket
+      "(\+)|" +       // 4. Plus sign
+      "(~)|" +        // 5. Tilde
+
+      // 6. Pseudo, 7. PseudoElement
+      "(:(:?)" + re_consumeName.source.slice(1) + "(\(getPseudoFunction\))?)|" +
+
+      "(\[re_Attr\])|" + // 8. Attr
+      "(\*)|" +       // 9. Asterisk (universal)
+
+      // 10. ID, 11. Class, 12. Name
+      "(?:(#)|(\.)" + re_consumeName.source.slice(1) + ")" +
+    ")"
+  )
+*/
+
 
 /**
  * @constructor
@@ -125,7 +148,7 @@ function Lexer(source, endChar, prevent_not) {
   }
 
   this.prevent_not = !!prevent_not
-  this.endChar = endChar || ''
+  this.endChar = endChar || ""
 
   this._reconsumed = false
 
@@ -151,8 +174,8 @@ Lexer.prototype.next = function() {
   }
 
   var r = this.sel.charAt(this.i+=1)
-  ,   parts
   ,   temp = ""
+  ,   parts
 
   this.last_tok_i = this.i
 
@@ -166,7 +189,6 @@ Lexer.prototype.next = function() {
   }
 
   switch(r) {
-
   // Whitespace
   case ' ': case '\t': case '\n':
 
@@ -190,10 +212,12 @@ Lexer.prototype.next = function() {
 
 
   // Combinators (not descendant ' ')
-  case '>': this.curr = COMBINATOR_CHILD_REUSE; break
-  case '+': this.curr = COMBINATOR_ADJACENT_REUSE; break
-  case '~': this.curr = COMBINATOR_GENERAL_REUSE; break
-
+  case '>': this.curr = COMBINATOR_CHILD_REUSE
+    break
+  case '+': this.curr = COMBINATOR_ADJACENT_REUSE
+    break
+  case '~': this.curr = COMBINATOR_GENERAL_REUSE
+    break
 
   // Pseudo
   case ':':
@@ -231,13 +255,12 @@ Lexer.prototype.next = function() {
     } else {
       this.curr = new Token(PSEUDO_TOKEN, name)
       this.curr.subKind = pseudoClassFns[name]
-      
+
       if (!this.curr.subKind) {
         throw errInvalidSelector
       }
     }
     break
-
 
   // Attribute
   case '[':
@@ -287,8 +310,8 @@ Lexer.prototype.next = function() {
 
 
 Lexer.prototype.getPseudoFunction = function(name) {
-  var block
-  ,   n = new Token(PSEUDO_FUNCTION_TOKEN, name.toLowerCase())
+  var n = new Token(PSEUDO_FUNCTION_TOKEN, name.toLowerCase())
+  ,   block
 
   switch (n.value) {
   case "not":
@@ -311,7 +334,6 @@ Lexer.prototype.getPseudoFunction = function(name) {
     break
 
   case "lang":
-
     // New Lexer with the same source that halts on `)`
     block = new Lexer(this, ')')
 
@@ -382,7 +404,7 @@ Lexer.prototype.makeNth = function(n) {
   n.a = 0
   n.b = 0
 
-  var parts = re_makeNth.exec(this.sel.slice(this.i+1))
+  const parts = re_makeNth.exec(this.sel.slice(this.i+1))
 
   if (!parts) {
     throw errInvalidSelector
@@ -400,8 +422,8 @@ Lexer.prototype.makeNth = function(n) {
     n.b = 1
 
   } else {
-    var aStr = parts[2]
-    ,   bStr = parts[3] + parts[4]
+    const aStr = parts[2]
+    ,     bStr = parts[3] + parts[4]
 
     if (!aStr || aStr === '+' || aStr === '-') {
       // If '-', -1 else must be '+' or empty string, so 1

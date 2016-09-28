@@ -1,0 +1,41 @@
+{
+  "name": "selector-engine",
+  "version": "1.0.0",
+  "description": "Standards-based selector engine with patches for querySelector[All]() and matches().",
+  "config": {
+    "debug": false,
+    "extend_protos": false
+  },
+  "dependencies": {
+  },
+  "main": "src/selector-engine.min.js",
+  "files": [
+    "src/lexer.js",
+    "src/parser.js",
+    "src/engine.js"
+  ],
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Perelandric/selector-engine.git"
+  },
+  "keywords": [
+    "querySelector",
+    "querySelectorAll",
+    "matchesSelector",
+    "matches",
+    "selector",
+    "engine"
+  ],
+  "author": "Perelandric",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Perelandric/selector-engine/issues"
+  },
+  "homepage": "https://github.com/Perelandric/selector-engine#readme"
+}

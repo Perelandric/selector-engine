@@ -1,3 +1,5 @@
+import '~/Documents/projects/javascript/simple-test'
+import '../lib/selector-engine.js'
 
 function log() {
   return window.console && console.log.apply(console, arguments)

@@ -18,16 +18,17 @@ var re_trim = /(?:^\s+|\s+$)/g
  * @param {string|Lexer} strTok
  */
 function SelectorGroup(strTok) {
-  var isLexer = strTok instanceof Lexer
+  const isLexer = strTok instanceof Lexer
 
   if (!isLexer && cache.hasOwnProperty(strTok)) {
     return cache[strTok]
   }
 
   // Selectors with matching qualifiers are put together into a subgroup.
-  var subGroups = {}
+  const subGroups = {}
   ,   source = new Lexer(strTok)
-  ,   first = true
+
+  var first = true
   ,   hasUniversal = false
   ,   n
 
@@ -48,7 +49,7 @@ function SelectorGroup(strTok) {
       source.reconsume()
     }
 
-    var selObject = new Selector(source, true)
+    const selObject = new Selector(source, true)
 
     hasUniversal = hasUniversal || selObject.qualifier === "*"
 
@@ -127,28 +128,16 @@ SelectorGroup.prototype.matches = function(el) {
  * @return {Element}
  */
 SelectorGroup.prototype.selectFirstFrom = function(root) {
-  var sgLen = this.subGroups.length
-  ,   res = null
+  // Having quantity of variables here equal to `selectFrom` helps compression
+  const sgLen = this.subGroups.length
+  var res = null
 
   for (var i = 0; i < sgLen; i+=1) {
-    var subGroup = this.subGroups[i]
-    ,   potentials =
-          root.getElementsByTagName(needTagFix ? "*" : subGroup[0].qualifier)
-
-    // Check each potential element to see if they match a selector
-    for (var j = 0; j < potentials.length; j+=1) {
-      var el = potentials[j]
-
-      // If not an element, or an element but not a match, try the next elem
-      if ((needCommentFilter && el.nodeType !== 1) || !_matches(el, subGroup)) {
-        continue
-      }
-
+    this.potentialsLoop(i, null, function(el) {
       // Keep the one that appears first on the DOM
       res = res && sorter(res, el) < 0 ? res : el
-
-      break // Only need the first match from each subgroup.
-    }
+      return true
+    })
   }
 
   return res
@@ -166,54 +155,63 @@ SelectorGroup.prototype.selectFirstFrom = function(root) {
  * @return {Array<!Element>}
  */
 SelectorGroup.prototype.selectFrom = function(root) {
-  var resArr = []
+  const resArr = []
 
   // Track if elements are located in more than one selector subGroup
-  ,   matchedSubGroups = 0
+  var matchedSubGroups = 0
 
   // When checking if unique, we only need to search until the end of the
   // results of the previous subgroup's results.
-  ,   searchUniqueUntil = 0
+  ,   prevLen = 0
 
 
   // TODO: Ultimately want to optimize for `gEBI`, `gEBCN`, `gEBTN`, `:root`
   // when the selector consists entirely of one of those.
   for (var i = 0; i < this.subGroups.length; i+=1) {
-    var subGroup = this.subGroups[i]
-    ,   potentials =
-          root.getElementsByTagName(needTagFix ? "*" : subGroup[0].qualifier)
-
-    ELEM_LOOP: // Check each potential element to see if they match a selector
-    for (var j = 0; j < potentials.length; j+=1) {
-      var el = potentials[j]
-
-      // If not an element, or an element but not a match, try the next elem
-      if ((needCommentFilter && el.nodeType !== 1) || !_matches(el, subGroup)) {
-        continue
-      }
-
-      for (var k = 0; k < searchUniqueUntil; k+=1) {
+    this.potentialsLoop(i, resArr, function(el) {
+      for (var k = 0; k < prevLen; k+=1) {
         if (resArr[k] === el) {
-          continue ELEM_LOOP
+          return
         }
       }
 
       resArr.push(el)
-    }
+    })
 
     // Current subGroup must have added at least one unique element
-    if (resArr.length !== searchUniqueUntil) {
+    if (resArr.length !== prevLen) {
       matchedSubGroups+=1
-      searchUniqueUntil = resArr.length
+      prevLen = resArr.length
     }
   }
 
   // Don't bother sorting if all elems came from a single subGroup.
-  if (matchedSubGroups > 1) {
-    resArr.sort(sorter)
-  }
+  return matchedSubGroups ? resArr.sort(sorter) : resArr
+}
 
-  return resArr
+
+/**
+ * @param {!Number} i
+ * @param {Array<!Element>} resArr
+ * @param {func(!Element)} cb
+ */
+SelectorGroup.prototype.potentialsLoop = function(i, resArr, cb) {
+  const subGroup = this.subGroups[i]
+  ,   potentials =
+        root.getElementsByTagName(needTagFix ? "*" : subGroup[0].qualifier)
+
+  // Check each potential element to see if they match a selector
+  for (var j = 0; j < potentials.length; j+=1) {
+    var el = potentials[j]
+
+    // If not an element, or an element but not a match, try the next elem
+    if ((!needCommentFilter || el.nodeType === 1) && _matches(el, subGroup)) {
+      if (cb(el)) {
+        // selectFirstFrom only needs the first match from each subgroup.
+        break
+      }
+    }
+  }
 }
 
 
@@ -240,7 +238,7 @@ function Selector(source, guarantee_tag) {
     endIdx = source.sel.length
   }
 
-  var potentialSel = source.sel.slice(startIdx, endIdx).replace(re_trim, "")
+  const potentialSel = source.sel.slice(startIdx, endIdx).replace(re_trim, "")
 
   if (selCache.hasOwnProperty(potentialSel)) {
     source._reconsumed = false
@@ -310,7 +308,7 @@ function Selector(source, guarantee_tag) {
 }
 
 
-var temp_sequence = []
+const temp_sequence = []
 
 
 /**

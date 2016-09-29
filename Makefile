@@ -28,9 +28,8 @@ closure_params = java -jar '$(CLOSURE)' \
 	--define $(debug_mode) \
   --language_in ECMASCRIPT6 \
   --language_out ECMASCRIPT3 \
-	$(formatting)
-
-gzip_closure = gzip --keep --best $@; \
+	$(formatting); \
+	gzip --keep --best $@; \
 	echo ...$@ complete; \
 	echo
 
@@ -59,13 +58,11 @@ $(full):
 	mkdir -p $(dir $@)
 	@echo Creating $@...
 	$(closure_params)
-	$(gzip_closure)
 
 
 $(compiled): $(full) set_advanced
 	@echo Compiling $@...
 	$(closure_params)
-	$(gzip_closure)
 
 
 build: $(compiled)

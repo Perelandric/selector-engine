@@ -1,24 +1,18 @@
 {
   "name": "selector-engine",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "Standards-based selector engine with patches for querySelector[All]() and matches().",
   "config": {
-    "debug": false,
-    "extend_protos": false
   },
   "dependencies": {
+    "quick-test": "0.0.3"
   },
   "main": "src/selector-engine.min.js",
   "files": [
-    "src/lexer.js",
-    "src/parser.js",
-    "src/engine.js"
   ],
   "directories": {
-    "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",

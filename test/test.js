@@ -1,36 +1,50 @@
-import '~/Documents/projects/javascript/simple-test'
-import '../lib/selector-engine.js'
+var jsdom = require("jsdom")
+var QuickTest = require("quick-test")
+var Query = require("selector-engine")
 
-function log() {
-  return window.console && console.log.apply(console, arguments)
-}
+jsdom.env(
+  '<div>' +
+    '<div id=foo class="foo bar" data-t="foo-bar">' +
+      '' +
+    '</div>' +
+  '</div>',
+  [],
+  function (err, window) {
+    const Query = window.Query
+    const doc = window.document
+    var sel = "div#foo.foo.bar:first-of-type:last-of-type:only-of-type" +
+                 ":first-child:last-child:only-child[data-t][data-t*='-']" +
+                 "[data-t^=foo][data-t$=bar][data-t|=foo][data-t=foo-bar]" +
+                 "[data-t~=foo-bar]:not(p):nth-child(1)"
 
-var div = document.createElement("div")
-div.id = "foo"
-div.className = "foo bar"
-div.setAttribute("data-t", "foo-bar")
+    const outer = Query.one(doc, "div")
+    var div = null
 
-var outer = document.createElement("div")
-outer.appendChild(div)
+    QuickTest({
+      name: "All selector tests"
+    },
+      t => {
+        t.equal(doc.body.firstElementChild, outer)
 
-var sel = "div#foo.foo.bar:first-of-type:last-of-type:only-of-type" +
-             ":first-child:last-child:only-child[data-t][data-t*='-']" +
-             "[data-t^=foo][data-t$=bar][data-t|=foo][data-t=foo-bar]" +
-             "[data-t~=foo-bar]:not(p):nth-child(1)"
+        div = outer.firstElementChild
 
-log("Matches:", Query.matches(div, sel))
-log("querySelector:", Query.one(outer, sel))
+        t.equal(true, Query.matches(div, sel))
+        t.equal(div, Query.one(outer, "div"))
 
-sel += " span"
+        sel += " span"
 
-var span = div.appendChild(document.createElement("span"))
+        const span = div.appendChild(document.createElement("span"))
 
-log("Matches:", Query.matches(span, sel))
-log("querySelector:", Query.one(outer, sel))
+        t.equal(true, Query.matches(span, sel))
+        t.equal(span, Query.one(outer, sel))
 
-sel += ", p"
+        sel += ", p"
 
-var p = outer.insertBefore(document.createElement("p"), outer.firstChild)
+        const p = outer.insertBefore(document.createElement("p"), outer.firstChild)
 
-log("Matches:", Query.matches(p, sel))
-log("querySelector:", Query.one(outer, sel))
+        t.equal(true, Query.matches(p, sel))
+        t.equal(p, Query.one(outer, sel))
+      }
+    )
+  }
+)

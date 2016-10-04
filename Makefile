@@ -2,23 +2,39 @@ SHELL := /bin/bash
 
 
 # Variables expanded in place
-wrapper_js 	:= src/wrapper.js
+# ===========================
 
+# love
+love				:= /home/mainuser/Documents/projects/love/
+
+# source files
+wrapper_js 	:= src/wrapper.js
 exported_js := src/exported.js
 lexer_js 		:= src/lexer.js
 parser_js 	:= src/parser.js
 engine_js 	:= src/engine.js
 
+# test files
+test_js			:= test/test.js
+
+# target files
 base				:= lib/selector-engine
 full				:= $(base).js
 compiled		:= $(base).min.js
 
+# compiler settings
 debug_mode	:= DEBUG_MODE=false
 comp_level	:= WHITESPACE_ONLY
 formatting	:= --formatting PRETTY_PRINT
 
 
+# WOULD NEED A SECTION TO DEFINE DEPENDENCIES.
+
+
 # Variables expanded at point of use
+# ==================================
+
+# closure compiler & gzip commands
 closure_params = java -jar '$(CLOSURE)' \
   --js $(exported_js) $(lexer_js) $(parser_js) $(engine_js) \
   --output_wrapper_file $(wrapper_js) \
@@ -66,6 +82,10 @@ $(compiled): $(full) set_advanced
 
 
 build: $(compiled)
+
+
+tester:
+	node $(test_js)
 
 
 #lint:

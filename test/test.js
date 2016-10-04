@@ -1,6 +1,5 @@
 var jsdom = require("jsdom")
 var QuickTest = require("quick-test")
-var Query = require("selector-engine")
 
 jsdom.env(
   '<div>' +
@@ -8,7 +7,7 @@ jsdom.env(
       '' +
     '</div>' +
   '</div>',
-  [],
+  ["lib/selector-engine.min.js"],
   function (err, window) {
     const Query = window.Query
     const doc = window.document

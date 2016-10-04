@@ -169,8 +169,9 @@ Lexer.prototype.next = function() {
     return this.curr
   }
 
-  if (this.curr == null) { // May have been manually set to `null` below
-    return this.curr
+  // Strict equality, since `undefined` is uninitialized, and `null` is closed.
+  if (this.curr === null) {
+    return this.curr // May have been manually set to `null` below
   }
 
   var r = this.sel.charAt(this.i+=1)
@@ -229,7 +230,7 @@ Lexer.prototype.next = function() {
     }
 
     name = (re_consumeName.exec(
-      this.sel.slice(this.i+1)) || arrEmptyString).charAt(0).toLowerCase()
+      this.sel.slice(this.i+1)) || arrEmptyString)[0].toLowerCase()
 
     this.i += name.length
 

@@ -133,7 +133,7 @@ SelectorGroup.prototype.selectFirstFrom = function(root) {
   var res = null
 
   for (var i = 0; i < sgLen; i+=1) {
-    this.potentialsLoop(i, null, function(el) {
+    this.potentialsLoop(root, i, null, function(el) {
       // Keep the one that appears first on the DOM
       res = res && sorter(res, el) < 0 ? res : el
       return true
@@ -168,7 +168,7 @@ SelectorGroup.prototype.selectFrom = function(root) {
   // TODO: Ultimately want to optimize for `gEBI`, `gEBCN`, `gEBTN`, `:root`
   // when the selector consists entirely of one of those.
   for (var i = 0; i < this.subGroups.length; i+=1) {
-    this.potentialsLoop(i, resArr, function(el) {
+    this.potentialsLoop(root, i, resArr, function(el) {
       for (var k = 0; k < prevLen; k+=1) {
         if (resArr[k] === el) {
           return
@@ -195,7 +195,7 @@ SelectorGroup.prototype.selectFrom = function(root) {
  * @param {Array<!Element>} resArr
  * @param {func(!Element)} cb
  */
-SelectorGroup.prototype.potentialsLoop = function(i, resArr, cb) {
+SelectorGroup.prototype.potentialsLoop = function(root, i, resArr, cb) {
   const subGroup = this.subGroups[i]
   ,   potentials =
         root.getElementsByTagName(needTagFix ? "*" : subGroup[0].qualifier)

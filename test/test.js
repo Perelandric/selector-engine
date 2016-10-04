@@ -7,16 +7,19 @@ jsdom.env(
       '' +
     '</div>' +
   '</div>',
-  ["lib/selector-engine.min.js"],
+  ["lib/selector-engine.js"],
   function (err, window) {
     const Query = window.Query
     const doc = window.document
     var sel = "div#foo.foo.bar:first-of-type:last-of-type:only-of-type" +
                  ":first-child:last-child:only-child[data-t][data-t*='-']" +
                  "[data-t^=foo][data-t$=bar][data-t|=foo][data-t=foo-bar]" +
-                 "[data-t~=foo-bar]:not(p):nth-child(1)"
+                 "[data-t~=foo-bar]:not(p)"
+                 //:nth-child(1)
 
+    Query.log = function() { console.log.apply(console, arguments) }
     const outer = Query.one(doc, "div")
+
     var div = null
 
     QuickTest({
@@ -32,14 +35,14 @@ jsdom.env(
 
         sel += " span"
 
-        const span = div.appendChild(document.createElement("span"))
+        const span = div.appendChild(doc.createElement("span"))
 
         t.equal(true, Query.matches(span, sel))
         t.equal(span, Query.one(outer, sel))
 
         sel += ", p"
 
-        const p = outer.insertBefore(document.createElement("p"), outer.firstChild)
+        const p = outer.insertBefore(doc.createElement("p"), outer.firstChild)
 
         t.equal(true, Query.matches(p, sel))
         t.equal(p, Query.one(outer, sel))

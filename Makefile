@@ -4,9 +4,6 @@ SHELL := /bin/bash
 # Variables expanded in place
 # ===========================
 
-# love
-love				:= /home/mainuser/Documents/projects/love/
-
 # source files
 wrapper_js 	:= src/wrapper.js
 exported_js := src/exported.js
@@ -52,7 +49,7 @@ closure_params = java -jar '$(CLOSURE)' \
 
 # Rules
 
-.PHONY: all
+.PHONY: all test clean
 
 
 all: build
@@ -84,7 +81,7 @@ $(compiled): $(full) set_advanced
 build: $(compiled)
 
 
-tester:
+test:
 	node $(test_js)
 
 

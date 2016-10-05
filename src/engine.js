@@ -262,16 +262,12 @@ function isNth(el, simple, nn, fromEnd) {
   ,   offset = simple.b
   ,   cap = nth <= 0 ? offset : Infinity // Don't traverse farther than needed
 
-  if (!el.parentNode || (nth <= 0 && offset <= 0)) {
+  if (!el.parentNode) {
     return false
   }
 
   var idx = 1 // 1-based index
   ,   curr = fromEnd ? el.parentNode.lastChild : el.parentNode.firstChild
-
-  if (!curr) {
-    return false
-  }
 
   nn = nn.toUpperCase()
 
@@ -283,14 +279,7 @@ function isNth(el, simple, nn, fromEnd) {
     curr = fromEnd ? curr.previousSibling : curr.nextSibling
   }
 
-  // If not on an `nth`, then it's not a match
-  if (idx % nth !== offset) {
-    return false
-  }
-
-  // If the `nth >= 0`, the `idx` must be checked for `>= offset`,
-  // otherwise, we know already that `nth < 0` and therefore `idx < offset`.
-  return nth >= 0 && idx >= offset
+  return idx === offset || ((nth>=0 === idx>=offset) && (idx-offset)%nth === 0)
 }
 
 

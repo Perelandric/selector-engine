@@ -386,8 +386,8 @@ function onOrAfter(a, b) {
   if (a === b || (a.firstChild && onOrAfter(a.firstChild, b))) {
     return true
   }
-  while ((a = a.nextSibling)) {
-    if (a.nodeType === 1 && onOrAfter(a, b)) {
+  while ((a = nextElemSib(a))) {
+    if (onOrAfter(a, b)) {
       return true
     }
   }
@@ -402,6 +402,6 @@ function sorter(a, b) {
           a.contains(b) ? -1 :
           b.contains(a) ? 1 :
 
-          // IE 6 supports `.contains()`, so start on the `.nextSibling`
-          onOrAfter(a.nextSibling, b) ? -1 : 1)
+          // IE 6 supports `.contains()`, so start on the next sibling
+          onOrAfter(nextElemSib(a), b) ? -1 : 1)
 }

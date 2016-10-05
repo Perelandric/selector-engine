@@ -51,16 +51,13 @@ function _matches(origEl, subGroup) {
         case CHILD_COMB:        haltOnFail = true; /*falls through*/
         case DESCENDANT_COMB:   el = el.parentNode; break
         case ADJACENT_SIB_COMB: haltOnFail = true; /*falls through*/
-        case GENERAL_SIB_COMB:
-          while ((el = el.previousSibling) && el.nodeType !== 1) {}
-          break
+        case GENERAL_SIB_COMB:  el = prevElemSib(el); break
         default: if (DEBUG_MODE) { throw errInternal }
         }
 
         if (!el || el.nodeType !== 1) { // No more elems to traverse, so fail
           return false
         }
-        el = /**@type {!Element}*/(el)
 
         // Set to go back to this combinator if needed (+1 for the decrement)
         lastCombinatorIdx = j + 1
@@ -78,7 +75,7 @@ function _matches(origEl, subGroup) {
         continue // Always matches
 
       case TAG_TOKEN:
-        temp = el.nodeName.toUpperCase()
+        temp = nodeName(el)
         thisSeqQualName = part.value
 
         if (needTagFix && temp.charAt(0) === '/') {
@@ -259,8 +256,8 @@ function fieldMatch(target, pattern) {
  */
 function isNth(el, simple, nn, fromEnd) {
   const nth = simple.a
-  ,   offset = simple.b
-  ,   cap = nth <= 0 ? offset : Infinity // Don't traverse farther than needed
+  ,     offset = simple.b
+//  ,   cap = nth <= 0 ? offset : Infinity // Don't traverse farther than needed
 
   if (!el.parentNode) {
     return false
@@ -268,15 +265,14 @@ function isNth(el, simple, nn, fromEnd) {
 
   var idx = 1 // 1-based index
   ,   curr = fromEnd ? el.parentNode.lastChild : el.parentNode.firstChild
+  ,   move = fromEnd ? prevElemSib : nextElemSib
 
-  nn = nn.toUpperCase()
-
-  while (curr !== el && idx <= cap) {
-    if (curr.nodeType === 1 && (!nn || curr.nodeName.toUpperCase() === nn)) {
+  while (curr !== el /*&& idx <= cap*/) {
+    if (!nn || nodeName(curr) === nn) {
       idx += 1
     }
 
-    curr = fromEnd ? curr.previousSibling : curr.nextSibling
+    curr = move(curr)
   }
 
   return idx === offset || ((nth>=0 === idx>=offset) && (idx-offset)%nth === 0)
@@ -291,6 +287,14 @@ const hiddenOrButton = {
 }
 
 
+ /**
+ * @param {!Element} el
+ * @return {string}
+ */
+function nodeName(el) {
+  return el.nodeName.toUpperCase()
+}
+
 /**
  * Because `<input type=number>` gets turned into `type=text` in browsers that
  * don't supporter `type=number`, we check for the existence of a `min` or a
@@ -300,9 +304,50 @@ const hiddenOrButton = {
  * @return {boolean}
  */
 function isNumberInput(el) {
-  return el.nodeName.toUpperCase() === "INPUT" &&
+  return nodeName(el) === "INPUT" &&
         (el.type === "number" ||
-         el.type === "text" && ("min" in el || "max" in el))
+         (el.type === "text" && (hasAttr(el, "min") || hasAttr(el, "max"))))
+}
+
+/**
+ * @param {!Element} el
+ * @param {!string} name
+ * @return {boolean}
+ */
+function checkBooleanAttr(el, name) {
+  return el[name] || hasAttr(el, name)
+}
+
+/**
+ * @param {!Element} el
+ * @param {!string} name
+ * @return {boolean}
+ */
+function hasAttr(el, name) {
+  //return el.hasAttribute ? el.hasAttribute(name) : !!el.attributes[name]
+  return !!el.attributes[name]
+}
+
+
+/**
+ * @param {!Element} el
+ * @return {Element}
+ */
+function prevElemSib(el) {
+  while ((el = el.previousSibling) && el.nodeType !== 1) {
+  }
+  return el
+}
+
+
+/**
+ * @param {!Element} el
+ * @return {Element}
+ */
+function nextElemSib(el) {
+  while ((el = el.nextSibling) && el.nodeType !== 1) {
+  }
+  return el
 }
 
 
@@ -317,31 +362,25 @@ var pseudoClassFns = {
     return !el.firstChild
   },
   "optional": function(el) {
-    return formControls[el.nodeName.toUpperCase()] &&
-            !hiddenOrButton[el.type] &&
-            !pseudoClassFns["required"](el)
+    return !pseudoClassFns["required"](el)
   },
   "required": function(el) {
-    return formControls[el.nodeName.toUpperCase()] &&
-            !hiddenOrButton[el.type] &&
-            (typeof el.required === "string" ||
-              (typeof el.required === "boolean" && el.required))
+    return checkBooleanAttr(el, "required") &&
+            formControls[nodeName(el)] &&
+            !hiddenOrButton[el.type]
+
   },
   "checked": function(el) {
     return (el.checked && (el.type === "checkbox" || el.type === "radio")) ||
-           (el.selected && el.nodeName === "OPTION")
+           (el.selected && nodeName(el) === "OPTION")
   },
   "indeterminate": function(el) {
-    return !!el.indeterminate &&
+    return checkBooleanAttr(el, "indeterminate") &&
             el.type === "checkbox" &&
-            el.nodeName.toUpperCase() === "INPUT"
+            nodeName(el) === "INPUT"
   },
   "out-of-range": function(el) {
-    return isNumberInput(el) &&
-            // no min or GTE min, and...
-            ((+el.min !== +el.min || +el.value >= +el.min) &&
-            // no max or LTE max
-            (+el.max !== +el.max || +el.value <= +el.max)) === false
+    return !pseudoClassFns["in-range"](el)
   },
   "in-range": function(el) {
     return isNumberInput(el) &&
@@ -360,10 +399,10 @@ var pseudoClassFns = {
             Query["one"](el.form, sel) === el
   },
   "enabled": function(el) {
-    return !el.disabled && formControls[el.nodeName.toUpperCase()]
+    return !pseudoClassFns["disabled"](el)
   },
   "disabled": function(el) {
-    return el.disabled && formControls[el.nodeName.toUpperCase()]
+    return checkBooleanAttr(el, "disabled") && formControls[nodeName(el)]
   },
   "target": function(el) {
     return el.id && window.location.hash.slice(1) === el.id
@@ -420,32 +459,25 @@ var pseudoClassFns = {
     return el === el.ownerDocument.activeElement
   },
   "first-child": function(el) {
-    while ((el = el.previousSibling) && el.nodeType !== 1) {
-    }
-    return !el
+    return !prevElemSib(el)
   },
   "last-child": function(el) {
-    while ((el = el.nextSibling) && el.nodeType !== 1) {
-    }
-    return !el
+    return !nextElemSib(el)
   },
   "only-child": function(el) {
-    return pseudoClassFns["first-child"](el) &&
-            pseudoClassFns["last-child"](el)
+    return !prevElemSib(el) && !nextElemSib(el)
   },
   "first-of-type": function(el) {
-    const name = el.nodeName.toUpperCase()
+    const name = nodeName(el)
 
-    while ((el = el.previousSibling) && (el.nodeType !== 1 ||
-            el.nodeName.toUpperCase() !== name)) {
+    while ((el = prevElemSib(el)) && (nodeName(el) !== name)) {
     }
     return !el
   },
   "last-of-type": function(el) {
-    const name = el.nodeName.toUpperCase()
+    const name = nodeName(el)
 
-    while ((el = el.nextSibling) && (el.nodeType !== 1 ||
-            el.nodeName.toUpperCase() !== name)) {
+    while ((el = nextElemSib(el)) && (nodeName(el) !== name)) {
     }
     return !el
   },

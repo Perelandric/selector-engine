@@ -4,7 +4,7 @@
   "description": "Standards-based selector engine with patches for querySelector[All]() and matches().",
   "config": {},
   "dependencies": {
-    "quick-test": "0.0.4"
+    "quick-test": "0.2.0"
   },
   "main": "src/selector-engine.min.js",
   "files": [],

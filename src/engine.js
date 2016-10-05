@@ -407,6 +407,9 @@ var pseudoClassFns = {
   "target": function(el) {
     return el.id && window.location.hash.slice(1) === el.id
   },
+  "any-link": function(el) {
+    return nodeName(el) === "A" && hasAttr(el, "href")
+  },
   "hover": function(el) {
     // We only add the mouseover handler if absolutely necessary.
     if (needHoverHelperSetup) {

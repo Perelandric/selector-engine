@@ -1,6 +1,6 @@
 {
   "name": "selector-engine",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Standards-based selector engine with patches for querySelector[All]() and matches().",
   "config": {},
   "dependencies": {

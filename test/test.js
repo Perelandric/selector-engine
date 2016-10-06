@@ -15,7 +15,9 @@ jsdom.env(
     var sel = "div#foo.foo.bar:first-of-type:last-of-type:only-of-type" +
                  ":first-child:last-child:only-child[data-t][data-t*='-']" +
                  "[data-t^=foo][data-t$=bar][data-t|=foo][data-t=foo-bar]" +
-                 "[data-t~=foo-bar]:not(p):nth-child(1)"
+                 "[data-t~=foo-bar]:not(p):nth-child(1):matches(div, #foo)"
+
+    //Query.log = console.log
 
     const outer = Query.one(doc, "div")
 
@@ -31,7 +33,7 @@ jsdom.env(
 
       t.equal(Query.one(outer, ":scope div"), fc)
       t.not_equal(Query.one(outer, ":scope"), outer)
-      
+
       t.true(Query.matches(fc, ":scope"))
       t.true(Query.matches(fc, "div#foo:scope"))
       t.false(Query.matches(fc, "p#foo:scope"))

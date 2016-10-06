@@ -15,13 +15,16 @@ engine_js 	:= src/engine.js
 test_js			:= test/test.js
 
 # target files
-base				:= lib/selector-engine
-full				:= $(base).js
-compiled		:= $(base).min.js
-gzipped			:= $(compiled).gz
+base						:= lib/selector-engine
+full						:= $(base).js
+compiled				:= $(base).min.js
+compiled_legacy	:= $(base)-legacy.min.js
+gzipped					:= $(compiled).gz
+gzipped_legacy	:= $(compiled_legacy).gz
 
 # compiler settings
 debug_mode	:= DEBUG_MODE=false
+legacy_mode	:= LEGACY=false
 comp_level	:= WHITESPACE_ONLY
 formatting	:= --formatting PRETTY_PRINT
 
@@ -40,6 +43,7 @@ closure_params = @java -jar '$(CLOSURE)' \
 	--compilation_level $(comp_level) \
 	--assume_function_wrapper \
 	--define $(debug_mode) \
+	--define $(legacy_mode) \
   --language_in ECMASCRIPT6 \
   --language_out ECMASCRIPT3 \
 	$(formatting); \
@@ -51,7 +55,7 @@ closure_params = @java -jar '$(CLOSURE)' \
 .PHONY: all test clean
 
 
-all: $(compiled) sizes
+all: $(compiled) $(compiled_legacy) sizes
 
 
 debug: set_debug build
@@ -66,9 +70,18 @@ set_advanced:
 	$(eval formatting := )
 
 
+set_legacy:
+	$(eval legacy_mode := LEGACY=true)
+
+
 $(full):
 	@mkdir -p $(dir $@)
 	@echo -n Creating $@...
+	$(closure_params)
+
+
+$(compiled_legacy): $(full) set_legacy
+	@echo -n Compiling $@...
 	$(closure_params)
 
 
@@ -79,9 +92,9 @@ $(compiled): $(full) set_advanced
 
 # This is just to get the size of the gzipped file, which is removed
 sizes:
-	@gzip --keep $(compiled);
-	@stat --printf="%n: %s\n" $(full) $(compiled) $(compiled).gz
-	@rm $(gzipped);
+	@gzip --keep $(compiled) $(compiled_legacy);
+	@stat --printf="%-40n: %5s\n" $(full) $(compiled_legacy) $(compiled) $(gzipped_legacy) $(gzipped)
+	@rm $(gzipped) $(gzipped_legacy);
 
 
 test:

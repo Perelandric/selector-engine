@@ -18,6 +18,7 @@ test_js			:= test/test.js
 base				:= lib/selector-engine
 full				:= $(base).js
 compiled		:= $(base).min.js
+gzipped			:= $(compiled).gz
 
 # compiler settings
 debug_mode	:= DEBUG_MODE=false
@@ -31,7 +32,7 @@ formatting	:= --formatting PRETTY_PRINT
 # Variables expanded at point of use
 # ==================================
 
-# closure compiler & gzip commands
+# closure compiler
 closure_params = @java -jar '$(CLOSURE)' \
   --js $(exported_js) $(lexer_js) $(parser_js) $(engine_js) \
   --output_wrapper_file $(wrapper_js) \
@@ -80,8 +81,7 @@ $(compiled): $(full) set_advanced
 sizes:
 	@gzip --keep $(compiled);
 	@stat --printf="%n: %s\n" $(full) $(compiled) $(compiled).gz
-	@rm $(compiled).gz;
-
+	@rm $(gzipped);
 
 
 test:

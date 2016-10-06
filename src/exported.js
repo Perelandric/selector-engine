@@ -5,7 +5,7 @@
 
 
 /** @define {boolean} */
-const DEBUG_MODE = false
+const DEBUG_MODE = false, LEGACY = false
 
 const Query = global["Query"] = {}
 

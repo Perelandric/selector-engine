@@ -26,7 +26,7 @@ function SelectorGroup(strTok) {
 
   // Selectors with matching qualifiers are put together into a subgroup.
   const subGroups = {}
-  ,   source = new Lexer(strTok)
+  ,   source = isLexer ? strTok : new Lexer(strTok)
 
   var first = true
   ,   hasUniversal = false
@@ -265,6 +265,10 @@ function Selector(source, guarantee_tag) {
       break
 
     } else if (doCombinator) {
+      if (source.prevent_combinator) {
+        throw errInvalidSelector
+      }
+
       switch (n) {
       case COMBINATOR_CHILD_REUSE:
       case COMBINATOR_ADJACENT_REUSE:
@@ -385,7 +389,7 @@ in the DOM by checking to see if it's a match, a next sibling or a descendant
 of either.
 */
 function onOrAfter(a, b) {
-  if (a === b || (a.firstChild && onOrAfter(a.firstChild, b))) {
+  if (a === b || (firstElemChild(a) && onOrAfter(firstElemChild(a), b))) {
     return true
   }
   while ((a = nextElemSib(a))) {

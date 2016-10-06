@@ -1,22 +1,29 @@
 
-var testElem = document.createElement("div")
-
-const tempTagName = "div123"
-
-// Needed for old IE--v
-testElem.innerHTML = "1<" + tempTagName + "></" + tempTagName + ">"
-
-const needTagFix = testElem.getElementsByTagName("*")[0].nodeName.charAt(0) === '/'
-
-testElem.innerHTML = ""
-
-const needCommentFilter = testElem.appendChild(document.createComment(""))
-        .parentNode
-        .getElementsByTagName("*").length !== 0
-
 const re_twoSpaceOnceSpaceOrEmpty = /^\s\s?$|^$/
 
-testElem = null
+const needTagFix = function() {
+  if (LEGACY) {
+    const testElem = document.createElement("div")
+    const tempTagName = "div123"
+
+    // Needed for old IE--v
+    testElem.innerHTML = "1<" + tempTagName + "></" + tempTagName + ">"
+
+    return testElem.getElementsByTagName("*")[0].nodeName.charAt(0) === '/'
+
+  } else {
+    return false
+  }
+}()
+
+
+const needCommentFilter = LEGACY ?
+    document.createElement("div")
+      .appendChild(document.createComment(""))
+      .parentNode
+      .getElementsByTagName("*").length !== 0 :
+    false
+
 
 
 
@@ -112,6 +119,10 @@ function _matches(root, origEl, subGroup) {
         switch (part.subKind) {
         case NOT_TOKEN:
           if (!_matches(el, el, part.subSelector)) { continue }
+          break
+
+        case MATCHES_TOKEN:
+          if (part.subSelector["matches"](el)) { continue }
           break
 
         case NTH_CHILD_TOKEN:
@@ -267,15 +278,14 @@ function isNth(el, simple, nn, fromEnd) {
   }
 
   var idx = 1 // 1-based index
-  ,   curr = fromEnd ? el.parentNode.lastChild : el.parentNode.firstChild
-  ,   move = fromEnd ? prevElemSib : nextElemSib
+  ,   curr = fromEnd ? lastElemChild(el.parentNode) : firstElemChild(el.parentNode)
 
   while (curr !== el /*&& idx <= cap*/) {
     if (!nn || nodeName(curr) === nn) {
       idx += 1
     }
 
-    curr = move(curr)
+    curr = fromEnd ? prevElemSib(curr) : nextElemSib(curr)
   }
 
   return idx === offset || ((nth>=0 === idx>=offset) && (idx-offset)%nth === 0)
@@ -295,7 +305,7 @@ const hiddenOrButton = {
  * @return {string}
  */
 function nodeName(el) {
-  return el.nodeName.toUpperCase()
+  return LEGACY ? el.nodeName.toUpperCase() : el.nodeName
 }
 
 /**
@@ -337,9 +347,13 @@ function hasAttr(el, name) {
  * @return {Element}
  */
 function prevElemSib(el) {
-  while ((el = el.previousSibling) && el.nodeType !== 1) {
+  if (LEGACY) {
+    while ((el = el.previousSibling) && el.nodeType !== 1) {
+    }
+    return el
+  } else {
+    return el.previousElementSibling
   }
-  return el
 }
 
 
@@ -348,9 +362,43 @@ function prevElemSib(el) {
  * @return {Element}
  */
 function nextElemSib(el) {
-  while ((el = el.nextSibling) && el.nodeType !== 1) {
+  if (LEGACY) {
+    while ((el = el.nextSibling) && el.nodeType !== 1) {
+    }
+    return el
+  } else {
+    return el.nextElementSibling
   }
-  return el
+}
+
+
+/**
+ * @param {!Element} el
+ * @return {Element}
+ */
+function firstElemChild(el) {
+  if (LEGACY) {
+    return el.firstChild && el.firstChild.nodeType !== 1 ?
+            nextElemSib(el.firstChild) :
+            el.firstChild
+  } else {
+    return el.firstElementChild
+  }
+}
+
+
+/**
+ * @param {!Element} el
+ * @return {Element}
+ */
+function lastElemChild(el) {
+  if (LEGACY) {
+    return el.lastChild && el.lastChild.nodeType !== 1 ?
+            prevElemSib(el.lastChild) :
+            el.lastChild
+  } else {
+    return el.lastElementChild
+  }
 }
 
 
@@ -511,7 +559,7 @@ function hoverHelperSetup() {
 
   needHoverHelperSetup = false
 
-  if (window.addEventListener) {
+  if (!LEGACY || window.addEventListener) {
     window.addEventListener("mouseover", function(event) {
       hoverHelper = event.target
     }, true)

@@ -41,6 +41,7 @@ const errInvalidSelector = new Error("Invalid selector")
 ,   EQUAL_ATTR_TOKEN = '='
 
 ,   SCOPE = 22 // :scope pseudo class
+,   MATCHES_TOKEN = 23 // :matches pseudo function
 
 
 // Reusable, stateless objects
@@ -102,6 +103,7 @@ function Token(kind, value) {
 }
 Token.prototype.kind = NO_TOKEN
 Token.prototype.subKind = NO_TOKEN
+Token.prototype.subSelector = null
 Token.prototype.name = "" // Used for functions and attribute selectors
 Token.prototype.value = ""
 Token.prototype.a = 0
@@ -136,8 +138,9 @@ Token.prototype.b = 0
  * @param {string|Lexer} source
  * @param {string=} endChar
  * @param {boolean=} prevent_not
+ * @param {boolean=} prevent_combinator
  */
-function Lexer(source, endChar, prevent_not) {
+function Lexer(source, endChar, prevent_not, prevent_combinator) {
   if (source instanceof Lexer) {
     this.sel = source.sel
     this.i = source.i
@@ -150,6 +153,7 @@ function Lexer(source, endChar, prevent_not) {
   }
 
   this.prevent_not = !!prevent_not
+  this.prevent_combinator = !!prevent_combinator
   this.endChar = endChar || ""
 
   this._reconsumed = false
@@ -322,7 +326,7 @@ Lexer.prototype.getPseudoFunction = function(name) {
     }
 
     // New Lexer with the same source that halts on `)`
-    block = new Lexer(this, ')', true)
+    block = new Lexer(this, ')', true, true)
 
     n.subSelector = [new Selector(block, false)]
 
@@ -333,6 +337,15 @@ Lexer.prototype.getPseudoFunction = function(name) {
     }
 
     n.subKind = NOT_TOKEN
+    break
+
+  case "matches":
+    // New Lexer with the same source that halts on `)`
+    block = new Lexer(this, ')', false, true)
+
+    // TODO: Need to prevent combinators
+    n.subSelector = new SelectorGroup(block)
+    n.subKind = MATCHES_TOKEN
     break
 
   case "lang":

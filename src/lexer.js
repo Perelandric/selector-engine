@@ -40,6 +40,8 @@ const errInvalidSelector = new Error("Invalid selector")
 ,   SUBSTRING_MATCH_TOKEN = "*="
 ,   EQUAL_ATTR_TOKEN = '='
 
+,   SCOPE = 22 // :scope pseudo class
+
 
 // Reusable, stateless objects
 ,   COMBINATOR_DESCENDANT_REUSE = new Token(COMBINATOR)
@@ -254,7 +256,7 @@ Lexer.prototype.next = function() {
 
     } else {
       this.curr = new Token(PSEUDO_TOKEN, name)
-      this.curr.subKind = pseudoClassFns[name]
+      this.curr.subKind = name === "scope" ? SCOPE : pseudoClassFns[name]
 
       if (!this.curr.subKind) {
         throw errInvalidSelector

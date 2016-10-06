@@ -112,7 +112,7 @@ SelectorGroup.prototype._doSubGroups = function(subGroups, hasUniversal) {
  */
 SelectorGroup.prototype.matches = function(el) {
   for(var i = 0; i < this.subGroups.length; i+=1) {
-    if (_matches(el, this.subGroups[i])) {
+    if (_matches(el, el, this.subGroups[i])) {
       return true
     }
   }
@@ -128,12 +128,10 @@ SelectorGroup.prototype.matches = function(el) {
  * @return {Element}
  */
 SelectorGroup.prototype.selectFirstFrom = function(root) {
-  // Having quantity of variables here equal to `selectFrom` helps compression
-  const sgLen = this.subGroups.length
   var res = null
 
-  for (var i = 0; i < sgLen; i+=1) {
-    this.potentialsLoop(root, i, null, function(el) {
+  for (var i = 0; i < this.subGroups.length; i+=1) {
+    this.potentialsLoop(root, i, function(el) {
       // Keep the one that appears first on the DOM
       res = res && sorter(res, el) < 0 ? res : el
       return true
@@ -168,7 +166,7 @@ SelectorGroup.prototype.selectFrom = function(root) {
   // TODO: Ultimately want to optimize for `gEBI`, `gEBCN`, `gEBTN`, `:root`
   // when the selector consists entirely of one of those.
   for (var i = 0; i < this.subGroups.length; i+=1) {
-    this.potentialsLoop(root, i, resArr, function(el) {
+    this.potentialsLoop(root, i, function(el) {
       for (var k = 0; k < prevLen; k+=1) {
         if (resArr[k] === el) {
           return
@@ -186,16 +184,16 @@ SelectorGroup.prototype.selectFrom = function(root) {
   }
 
   // Don't bother sorting if all elems came from a single subGroup.
-  return matchedSubGroups ? resArr.sort(sorter) : resArr
+  return matchedSubGroups > 1 ? resArr.sort(sorter) : resArr
 }
 
 
 /**
+ * @param {!Element} root
  * @param {!Number} i
- * @param {Array<!Element>} resArr
  * @param {func(!Element)} cb
  */
-SelectorGroup.prototype.potentialsLoop = function(root, i, resArr, cb) {
+SelectorGroup.prototype.potentialsLoop = function(root, i, cb) {
   const subGroup = this.subGroups[i]
   ,   potentials =
         root.getElementsByTagName(needTagFix ? "*" : subGroup[0].qualifier)
@@ -205,7 +203,7 @@ SelectorGroup.prototype.potentialsLoop = function(root, i, resArr, cb) {
     var el = potentials[j]
 
     // If not an element, or an element but not a match, try the next elem
-    if ((!needCommentFilter || el.nodeType === 1) && _matches(el, subGroup)) {
+    if ((!needCommentFilter || el.nodeType === 1) && _matches(root, el, subGroup)) {
       if (cb(el)) {
         // selectFirstFrom only needs the first match from each subgroup.
         break
@@ -355,8 +353,14 @@ Selector.prototype.makeSimpleSequence = function(guarantee_tag) {
       this.source.reconsume()
       break OUTER
 
-    case ID_TOKEN: case ATTR_TOKEN: case CLASS_TOKEN: case PSEUDO_FUNCTION_TOKEN:
     case PSEUDO_TOKEN:
+      if (n.subKind === SCOPE) { // Make sure :scope is always handled first
+        temp_sequence.unshift(n)
+        break
+      }
+      /*fallthrough*/
+
+    case ID_TOKEN: case ATTR_TOKEN: case CLASS_TOKEN: case PSEUDO_FUNCTION_TOKEN:
       temp_sequence.push(n)
       break
 
@@ -369,11 +373,9 @@ Selector.prototype.makeSimpleSequence = function(guarantee_tag) {
   // that when we traverse a full selector, we can use a right-to-left loop
   // WRT the order of sequences and combinators, but when within a sequence,
   // it will still be as though we were going left to right.
-  for (var i = temp_sequence.length-1; i > -1; i-=1) {
-    this.parts.push(temp_sequence[i])
+  while (temp_sequence.length) {
+    this.parts.push(temp_sequence.pop())
   }
-
-  temp_sequence.length = 0
 }
 
 

@@ -22,33 +22,42 @@ jsdom.env(
     QuickTest({
       name: "All selector tests"
     },
-      function simple_div(t) {
-        t.equal(doc.body.firstElementChild, outer)
-      },
+    function simple_div(t) {
+      t.equal(doc.body.firstElementChild, outer)
+    },
 
-      function complex_div(t) {
-        t.true(Query.matches(outer.firstElementChild, sel))
-        t.equal(outer.firstElementChild, Query.one(outer, "div"))
-      },
+    function scope(t) {
+      const fc = outer.firstElementChild
 
-      function span_in_complex_div(t) {
-        sel += " span"
+      t.equal(Query.one(outer, ":scope div"), fc)
+      t.not_equal(Query.one(outer, ":scope"), outer)
+      t.true(Query.matches(fc, ":scope"))
+      t.true(Query.matches(fc, "div#foo:scope"))
+      t.false(Query.matches(fc, "p#foo:scope"))
+    },
 
-        const div = outer.firstElementChild
-        const span = div.appendChild(doc.createElement("span"))
+    function complex_div(t) {
+      t.true(Query.matches(outer.firstElementChild, sel))
+      t.equal(outer.firstElementChild, Query.one(outer, "div"))
+    },
 
-        t.true(Query.matches(span, sel))
-        t.equal(span, Query.one(outer, sel))
-      },
+    function span_in_complex_div(t) {
+      sel += " span"
 
-      function multi_with_p(t) {
-        sel += ", p"
+      const div = outer.firstElementChild
+      const span = div.appendChild(doc.createElement("span"))
 
-        const p = outer.insertBefore(doc.createElement("p"), outer.firstChild)
+      t.true(Query.matches(span, sel))
+      t.equal(span, Query.one(outer, sel))
+    },
 
-        t.true(Query.matches(p, sel))
-        t.equal(p, Query.one(outer, sel))
-      }
-    )
+    function multi_with_p(t) {
+      sel += ", p"
+
+      const p = outer.insertBefore(doc.createElement("p"), outer.firstChild)
+
+      t.true(Query.matches(p, sel))
+      t.equal(p, Query.one(outer, sel))
+    })
   }
 )

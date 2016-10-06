@@ -28,7 +28,7 @@ testElem = null
  * @param {!Array<!Selector>} subGroup
  * @return {boolean}
  */
-function _matches(origEl, subGroup) {
+function _matches(root, origEl, subGroup) {
 
   SUBGROUP_LOOP:
   for (var i = 0; i < subGroup.length; i+=1) {
@@ -99,16 +99,19 @@ function _matches(origEl, subGroup) {
 
       // Simple pseudos
       case PSEUDO_TOKEN:
-        if (part.subKind(el)) { continue }
+        if (part.subKind === SCOPE) {
+          if (el === root) { continue }
+
+        } else if (part.subKind(el)) { continue }
+
         break
 
 
       // Function pseudos
       case PSEUDO_FUNCTION_TOKEN:
-
         switch (part.subKind) {
         case NOT_TOKEN:
-          if (!_matches(el, part.subSelector)) { continue }
+          if (!_matches(el, el, part.subSelector)) { continue }
           break
 
         case NTH_CHILD_TOKEN:

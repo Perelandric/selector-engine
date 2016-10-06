@@ -118,7 +118,7 @@ function _matches(root, origEl, subGroup) {
       case PSEUDO_FUNCTION_TOKEN:
         switch (part.subKind) {
         case NOT_TOKEN:
-          if (!_matches(el, el, part.subSelector)) { continue }
+          if (!part.subSelector["matches"](el)) { continue }
           break
 
         case MATCHES_TOKEN:

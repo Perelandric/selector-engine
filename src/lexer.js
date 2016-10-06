@@ -326,16 +326,9 @@ Lexer.prototype.getPseudoFunction = function(name) {
     }
 
     // New Lexer with the same source that halts on `)`
-    block = new Lexer(this, ')', true, true)
+    block = new Lexer(this, ')', true, false)
 
-    n.subSelector = [new Selector(block, false)]
-
-    // A single simple selector and the NO_COMB
-    if (n.subSelector[0].parts.length !== 2 ||
-        n.subSelector[0].parts[0].subKind === NOT_TOKEN) {
-      throw errInvalidSelector
-    }
-
+    n.subSelector = new SelectorGroup(block)
     n.subKind = NOT_TOKEN
     break
 
@@ -343,14 +336,16 @@ Lexer.prototype.getPseudoFunction = function(name) {
     // New Lexer with the same source that halts on `)`
     block = new Lexer(this, ')', false, true)
 
-    // TODO: Need to prevent combinators
     n.subSelector = new SelectorGroup(block)
     n.subKind = MATCHES_TOKEN
     break
 
+  //case "has":
+  //  block = new Lexer(this, ')', )
+
   case "lang":
     // New Lexer with the same source that halts on `)`
-    block = new Lexer(this, ')')
+    block = new Lexer(this, ')', true, true)
 
     n = block.nextAfterSpace()
 

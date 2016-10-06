@@ -49,7 +49,7 @@ function SelectorGroup(strTok) {
       source.reconsume()
     }
 
-    const selObject = new Selector(source, true)
+    const selObject = new Selector(source)
 
     hasUniversal = hasUniversal || selObject.qualifier === "*"
 
@@ -225,10 +225,8 @@ SelectorGroup.prototype.potentialsLoop = function(root, i, cb) {
  * @constructor
  * @private
  * @param {Lexer} source input source for this selector
- * @param {boolean} guarantee_tag ensures that a sequence will start with a
- * TAG or UNIVERSAL selector when `true`
  */
-function Selector(source, guarantee_tag) {
+function Selector(source) {
   var startIdx = source._reconsumed ? source.last_tok_i : source.i + 1
   ,   endIdx = source.sel.indexOf(source.endChar || ',', startIdx)
 
@@ -290,7 +288,7 @@ function Selector(source, guarantee_tag) {
 
     } else {
       source.reconsume()
-      this.makeSimpleSequence(guarantee_tag) // will raise if none found
+      this.makeSimpleSequence() // will raise if none found
       doCombinator = true
     }
   }
@@ -317,7 +315,7 @@ const temp_sequence = []
  * Parses the stream of tokens into a valid sequence of simple selectors to be
  * added to the current Selector.
  */
-Selector.prototype.makeSimpleSequence = function(guarantee_tag) {
+Selector.prototype.makeSimpleSequence = function() {
   temp_sequence.length = 0 // Just to be certain
 
   // The previous qualifier was not the last sequence, so erase it
@@ -342,10 +340,7 @@ Selector.prototype.makeSimpleSequence = function(guarantee_tag) {
   default:
     this.source.reconsume()
     this.qualifier = "*"
-
-    if (guarantee_tag) {
-      temp_sequence.push(UNIVERSAL_TAG_REUSE)
-    }
+    temp_sequence.push(UNIVERSAL_TAG_REUSE)
   }
 
   OUTER:

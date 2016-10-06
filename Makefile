@@ -32,7 +32,7 @@ formatting	:= --formatting PRETTY_PRINT
 # ==================================
 
 # closure compiler & gzip commands
-closure_params = java -jar '$(CLOSURE)' \
+closure_params = @java -jar '$(CLOSURE)' \
   --js $(exported_js) $(lexer_js) $(parser_js) $(engine_js) \
   --output_wrapper_file $(wrapper_js) \
 	--js_output_file $@ \
@@ -42,9 +42,7 @@ closure_params = java -jar '$(CLOSURE)' \
   --language_in ECMASCRIPT6 \
   --language_out ECMASCRIPT3 \
 	$(formatting); \
-	gzip --keep --best $@; \
-	echo ...$@ complete; \
-	echo
+	echo done;
 
 
 # Rules
@@ -52,7 +50,7 @@ closure_params = java -jar '$(CLOSURE)' \
 .PHONY: all test clean
 
 
-all: build
+all: $(compiled) sizes
 
 
 debug: set_debug build
@@ -68,21 +66,26 @@ set_advanced:
 
 
 $(full):
-	mkdir -p $(dir $@)
-	@echo Creating $@...
+	@mkdir -p $(dir $@)
+	@echo -n Creating $@...
 	$(closure_params)
 
 
 $(compiled): $(full) set_advanced
-	@echo Compiling $@...
+	@echo -n Compiling $@...
 	$(closure_params)
 
 
-build: $(compiled)
+# This is just to get the size of the gzipped file, which is removed
+sizes:
+	@gzip --keep $(compiled);
+	@stat --printf="%n: %s\n" $(full) $(compiled) $(compiled).gz
+	@rm $(compiled).gz;
+
 
 
 test:
-	node $(test_js)
+	@node $(test_js)
 
 
 #lint:
@@ -90,4 +93,4 @@ test:
 #	eslint --quiet --fix $(full)
 
 clean:
-	rm -f $(base)*
+	@rm -f $(base)*

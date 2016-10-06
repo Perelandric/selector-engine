@@ -31,6 +31,7 @@ jsdom.env(
 
       t.equal(Query.one(outer, ":scope div"), fc)
       t.not_equal(Query.one(outer, ":scope"), outer)
+      
       t.true(Query.matches(fc, ":scope"))
       t.true(Query.matches(fc, "div#foo:scope"))
       t.false(Query.matches(fc, "p#foo:scope"))

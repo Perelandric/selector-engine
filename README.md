@@ -15,7 +15,7 @@
 
 To use this project, simply include one of the two files in your project. Use the *"legacy"* version if support for old browsers like IE6 is needed.
 
-| selector-engine.min.js | selector-engine-legacy.min.js |
+| [selector-engine.min.js](lib/selector-engine.min.js) | [selector-engine-legacy.min.js](/lib/selector-engine-legacy.min.js) |
 | --- | --- |
 | 3.7kb gzipped | 4.0kb gzipped |
 | Takes advantage of more modern features, providing better performance. | Ensures compatibility at a *minor* performance cost. |

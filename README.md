@@ -10,6 +10,7 @@
 | `Query.all` | `querySelectorAll` | Return all elements matching the provided selector from the given root. |
 | `Query.matches` | `matches` | Return `true` if the given element matches the selector, otherwise `false`. |
 
+In each `selector-engine` method, the first argument is the root from which the query is performed and the second argument is the selector string. If only one argument is passed, it is assumed to be the selector string, and the `document` will be used as the root.
 
 ##Usage
 

@@ -5,11 +5,12 @@ SHELL := /bin/bash
 # ===========================
 
 # source files
-wrapper_js 	:= src/wrapper.js
-exported_js := src/exported.js
-lexer_js 		:= src/lexer.js
-parser_js 	:= src/parser.js
-engine_js 	:= src/engine.js
+utilities_js	:= src/utilities.js
+wrapper_js 		:= src/wrapper.js
+exported_js 	:= src/exported.js
+lexer_js 			:= src/lexer.js
+parser_js 		:= src/parser.js
+engine_js 		:= src/engine.js
 
 # test files
 test_js			:= test/test.js
@@ -37,7 +38,7 @@ formatting	:= --formatting PRETTY_PRINT
 
 # closure compiler
 closure_params = @java -jar '$(CLOSURE)' \
-  --js $(exported_js) $(lexer_js) $(parser_js) $(engine_js) \
+  --js $(exported_js) $(lexer_js) $(parser_js) $(engine_js) $(utilities_js) \
   --output_wrapper_file $(wrapper_js) \
 	--js_output_file $@ \
 	--compilation_level $(comp_level) \

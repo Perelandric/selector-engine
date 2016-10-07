@@ -47,7 +47,7 @@ if (!Query.matches(div, ":empty")) {
 Not yet, but almost. `selector-engine` is not yet at its 1.0 release, so it should be considered unstable but real-world testing is mostly what is needed at this point.
 
 ###Will you be adding more selector support?
-That's the goal. Generally if one or two major browsers implement a feature described in the Working Draft or Editor's Draft of the Selectors API, I'll give it strong consideration.
+That's the goal. Generally if one or two major browsers implement a feature described in the Working Draft or Editor's Draft of the Selectors API, it'll be given consideration.
 
 ###Why support legacy browsers like IE6?
 There are some rare cases where legacy support at that level is genuinely needed. Adding support for them is fairly simple, so the decision was easy.
@@ -61,9 +61,9 @@ There are some rare cases where legacy support at that level is genuinely needed
 ###What issues are you unable to fix?
 - In legacy version of IE, properties on elements automatically become available as attributes. Because of this, if you use attribute selectors to fetch elements by a custom attribute that also appears as a custom property, you may get false positives. For example, in IE6, doing `element.foo = "bar"` will cause a `[foo="bar"]` selector to match that element, because `foo` will appear as an attribute on the element. This is not the case in modern browsers.
 
-###Will you provide the ability to define custom selectors?
+###Will you provide support for custom selectors?
 No, for the following reasons:
-- Adhering to standards makes code more portable and future proof. Code written to a non-standard library can only be used where that library will be accepted as a dependency, which isn't always the case.
+- Adhering to standards makes code more portable and future proof. Code written for non-standard features can only be used where that library will be accepted as a dependency, which isn't always the case.
 - For the same reason that developers often avoid extending host prototypes with custom methods, we avoid it with selectors. If custom selectors are added, they can conflict with future implementations of new standards. They can also conflict with additions by other libraries that use this library.
 - The standard selectors provide quite a lot of functionality, and like regular expressions, they're useful and powerful but don't need to be the solution to every problem.
 

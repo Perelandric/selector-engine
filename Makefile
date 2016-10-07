@@ -30,9 +30,6 @@ comp_level	:= WHITESPACE_ONLY
 formatting	:= --formatting PRETTY_PRINT
 
 
-# WOULD NEED A SECTION TO DEFINE DEPENDENCIES.
-
-
 # Variables expanded at point of use
 # ==================================
 
@@ -56,7 +53,7 @@ closure_params = @java -jar '$(CLOSURE)' \
 .PHONY: all test clean
 
 
-all: $(compiled) $(compiled_legacy) sizes
+all: $(compiled) $(compiled_legacy) sizes test
 
 
 debug: set_debug build

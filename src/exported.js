@@ -10,12 +10,24 @@ const DEBUG_MODE = false, LEGACY = false
 const Query = global["Query"] = {}
 
 Query["one"] = function(elem, selector) {
+  if (arguments.length === 1) {
+    selector = elem
+    elem = document
+  }
   return new SelectorGroup(selector).selectFirstFrom(elem)
 }
 Query["all"] = function(elem, selector) {
+  if (arguments.length === 1) {
+    selector = elem
+    elem = document
+  }
   return new SelectorGroup(selector).selectFrom(elem)
 }
 Query["matches"] = function(elem, selector) {
+  if (arguments.length === 1) {
+    selector = elem
+    elem = document
+  }
   return new SelectorGroup(selector).matches(elem)
 }
 

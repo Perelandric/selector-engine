@@ -158,41 +158,43 @@ function _matches(root, origEl, subGroup) {
 
       // Attribute selectors
       case ATTR_TOKEN:
-        var attrVal = el.getAttribute(part.name)
+      case ATTR_INSENSITIVE_TOKEN:
+        if ((temp = getAttr(el, part.name)) == null) {
+          break
+        }
 
-        if (attrVal == null) {
-          return false
+        if (part.kind === ATTR_INSENSITIVE_TOKEN) {
+          temp = temp.toLowerCase()
         }
 
         switch (part.subKind) {
         case EQUAL_ATTR_TOKEN:
-          if (attrVal === part.value) { continue }
+          if (temp === part.value) { continue }
           break
 
         case PREFIX_MATCH_TOKEN:
-          if (attrVal.lastIndexOf(part.value, 0) === 0) { continue }
+          if (temp.lastIndexOf(part.value, 0) === 0) { continue }
           break
 
         case SUFFIX_MATCH_TOKEN:
-          if (attrVal.lastIndexOf(part.value) + part.value.length ===
-                                                            attrVal.length) {
+          if (temp.lastIndexOf(part.value)+part.value.length === temp.length) {
             continue
           }
           break
 
         case DASH_MATCH_TOKEN:
-          if (dashMatch(attrVal, part.value)) { continue }
+          if (dashMatch(temp, part.value)) { continue }
           break
 
         case INCLUDE_MATCH_TOKEN:
-          if (fieldMatch(attrVal, part.value)) { continue }
+          if (fieldMatch(temp, part.value)) { continue }
           break
 
         case HAS_ATTR_TOKEN:
           continue // Already know it isn't null, so it has the attr
 
         case SUBSTRING_MATCH_TOKEN:
-          if (attrVal.indexOf(part.value) !== -1) { continue }
+          if (temp.indexOf(part.value) !== -1) { continue }
           break
 
         default:
@@ -337,8 +339,31 @@ function checkBooleanAttr(el, name) {
  * @return {boolean}
  */
 function hasAttr(el, name) {
-  //return el.hasAttribute ? el.hasAttribute(name) : !!el.attributes[name]
-  return !!el.attributes[name]
+  if (LEGACY) {
+    return !!(!el.attributes[name] && name === "class" ?
+                el.attributes["className"] :
+                el.attributes[name])
+  } else {
+    return !!el.attributes[name]
+  }
+}
+
+
+const reuse_obj = {}
+
+/**
+ * @param {!Element} el
+ * @param {!string} name
+ * @return {string|undefined}
+ */
+function getAttr(el, name) {
+  if (LEGACY) {
+    return ((!el.attributes[name] && name === "class" ?
+              el.attributes["className"] :
+              el.attributes[name]) || reuse_obj).value
+  } else {
+    return (el.attributes[name] || reuse_obj).value
+  }
 }
 
 

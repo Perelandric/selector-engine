@@ -42,6 +42,7 @@ const errInvalidSelector = new Error("Invalid selector")
 
 ,   SCOPE = 22 // :scope pseudo class
 ,   MATCHES_TOKEN = 23 // :matches pseudo function
+,   ATTR_INSENSITIVE_TOKEN = 24 // case insensitive attribute values
 
 
 // Reusable, stateless objects
@@ -66,13 +67,14 @@ const errInvalidSelector = new Error("Invalid selector")
   // 2: equal operators
   // 3: quoted value
   // 4: unquoted value
+  // 5: insensitive indicator
 ,   re_Attr = new RegExp(
   "^\\s*(" + re_consumeName.source.slice(1) + ")" + // name
   "\\s*(?:" + // starts optional operator and value
     "([$^*~|]?=)" + // operator
     "\\s*(?:((?:'(?:[^'\\n]|\\\\\\n)*')|(?:\"(?:[^\"\\n]|\\\\\\n)*\"))|" + // quoted val
     "(" + re_consumeName.source.slice(1) + "))" + // or unquoted val
-  ")?\\s*]") // end of optional operator and value + `]`
+  ")?\\s*([iI]?)\\s*]") // end of optional operator and value + `]`
 
 
   // test jsFiddle: https://jsfiddle.net/cvcfcuv5/6/
@@ -277,14 +279,21 @@ Lexer.prototype.next = function() {
     }
     this.i += parts[0].length
 
-    this.curr = new Token(ATTR_TOKEN)
+    this.curr = new Token(parts[5] ? ATTR_INSENSITIVE_TOKEN : ATTR_TOKEN)
     this.curr.name = parts[1]
 
     if (parts[2]) {
       this.curr.subKind = parts[2]
       this.curr.value = parts[3] ? parts[3].slice(1, -1) : parts[4]
+      if (parts[5]) {
+        this.curr.value = this.curr.value.toLowerCase()
+      }
+
     } else {
       this.curr.subKind = HAS_ATTR_TOKEN
+      if (parts[5]) { // Case insensitivity makes no sense with no value
+        throw errInvalidSelector
+      }
     }
     break
 
@@ -341,7 +350,6 @@ Lexer.prototype.getPseudoFunction = function(name) {
     break
 
   //case "has":
-  //  block = new Lexer(this, ')', )
 
   case "lang":
     // New Lexer with the same source that halts on `)`

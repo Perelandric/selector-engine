@@ -359,7 +359,8 @@ Selector.prototype.makeSimpleSequence = function() {
       }
       /*fallthrough*/
 
-    case ID_TOKEN: case ATTR_TOKEN: case CLASS_TOKEN: case PSEUDO_FUNCTION_TOKEN:
+    case ID_TOKEN: case ATTR_TOKEN: case ATTR_INSENSITIVE_TOKEN:
+    case CLASS_TOKEN: case PSEUDO_FUNCTION_TOKEN:
       temp_sequence.push(n)
       break
 

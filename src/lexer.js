@@ -182,7 +182,7 @@ Lexer.prototype.next = function() {
     return this.curr // May have been manually set to `null` below
   }
 
-  var r = this.sel.charAt(this.i+=1)
+  var r = getChar(this.sel, this.i+=1)
   ,   temp = ""
   ,   parts
 
@@ -201,7 +201,7 @@ Lexer.prototype.next = function() {
   // Whitespace
   case ' ': case '\t': case '\n':
     for (;;) { // Discard any subsequent whitespace
-      switch(this.sel.charAt(this.i += 1)) {
+      switch(getChar(this.sel, this.i += 1)) {
       case ' ': case '\t': case '\n':
         continue
       }
@@ -232,7 +232,7 @@ Lexer.prototype.next = function() {
     var verifyPseudoElem = false
     ,   name = ""
 
-    if (this.sel.charAt(this.i + 1) === ':') {
+    if (getChar(this.sel, this.i + 1) === ':') {
       this.i+=1 // Discard
       verifyPseudoElem = true
     }
@@ -256,7 +256,7 @@ Lexer.prototype.next = function() {
         throw errInvalidSelector
       }
 
-    } else if (this.sel.charAt(this.i + 1) === '(') { // Pseudo function
+    } else if (getChar(this.sel, this.i + 1) === '(') { // Pseudo function
       this.i+=1 // Discard
       this.curr = this.getPseudoFunction(name)
 

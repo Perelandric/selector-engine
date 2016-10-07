@@ -9,7 +9,7 @@ const needTagFix = function() {
     // Needed for old IE--v
     testElem.innerHTML = "1<" + tempTagName + "></" + tempTagName + ">"
 
-    return testElem.getElementsByTagName("*")[0].nodeName.charAt(0) === '/'
+    return getChar(testElem.getElementsByTagName("*")[0].nodeName, 0) === '/'
 
   } else {
     return false
@@ -85,7 +85,7 @@ function _matches(root, origEl, subGroup) {
         temp = nodeName(el)
         thisSeqQualName = part.value
 
-        if (needTagFix && temp.charAt(0) === '/') {
+        if (needTagFix && getChar(temp, 0) === '/') {
           temp = temp.slice(1)
         }
         if (temp === thisSeqQualName) { continue }
@@ -234,7 +234,7 @@ function _matches(root, origEl, subGroup) {
  * @return {!boolean}
  */
 function dashMatch(target, pattern) {
-  const last = target.charAt(pattern.length)
+  const last = getChar(target, pattern.length)
   return (!last || last === '-') && target.lastIndexOf(pattern, 0) === 0
 }
 
@@ -252,7 +252,7 @@ function fieldMatch(target, pattern) {
 
   while ((idx = target.indexOf(pattern, idx+1)) !== -1) {
     if (re_twoSpaceOnceSpaceOrEmpty.test(
-                target.charAt(idx-1) + target.charAt(idx + pattern.length))) {
+                getChar(target, idx-1) + getChar(target, idx+pattern.length))) {
       return true
     }
   }
@@ -299,6 +299,16 @@ const formControls = {
 }
 const hiddenOrButton = {
   "hidden":1, "image": 1, "button": 1, "submit": 1, "reset": 1
+}
+
+
+/**
+ * @param {!string} s
+ * @param {!number} i
+ * @return {string}
+ */
+function getChar(s, i) {
+  return LEGACY ? s.charAt(i) : s[i]
 }
 
 

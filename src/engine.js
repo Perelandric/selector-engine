@@ -272,14 +272,14 @@ function fieldMatch(target, pattern) {
  */
 function isNth(el, simple, nn, fromEnd) {
   const nth = simple.a
-  ,     offset = simple.b
+//  ,   offset = simple.b
 //  ,   cap = nth <= 0 ? offset : Infinity // Don't traverse farther than needed
 
   if (!el.parentNode) {
     return false
   }
 
-  var idx = 1 // 1-based index
+  var idx = 1-simple.b // 1-based index, less the offset
   ,   curr = fromEnd ? lastElemChild(el.parentNode) : firstElemChild(el.parentNode)
 
   while (curr !== el /*&& idx <= cap*/) {
@@ -290,7 +290,7 @@ function isNth(el, simple, nn, fromEnd) {
     curr = fromEnd ? prevElemSib(curr) : nextElemSib(curr)
   }
 
-  return idx === offset || ((nth>=0 === idx>=offset) && (idx-offset)%nth === 0)
+  return idx === 0 || idx % nth === 0 && idx / nth >= 0
 }
 
 

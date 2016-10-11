@@ -57,8 +57,6 @@ const errInvalidSelector = new Error("Invalid selector")
 ,   COMMA_TOKEN_REUSE = new Token(',', ',')
 ,   WHITESPACE_TOKEN_REUSE = new Token(WHITESPACE_TOKEN, ' ')
 
-
-// https://jsfiddle.net/f1jtd0x7/5/
 ,   re_consumeName =
       /^-?(?:[_a-zA-Z\u0080-\uFFFF]|\\[^\n]?|--\d?)(?:[-\w\u0080-\uFFFF]|\\[^\n]?)*/
 
@@ -77,7 +75,6 @@ const errInvalidSelector = new Error("Invalid selector")
   ")?\\s*([iI]?)\\s*]") // end of optional operator and value + `]`
 
 
-  // test jsFiddle: https://jsfiddle.net/cvcfcuv5/6/
   // 1: Entire string is a valid number
   // 2: First number (before `n`)
   // 3: + or - for second number

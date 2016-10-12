@@ -18,7 +18,7 @@ To use this project, simply include one of the two files in your project. Use th
 
 | [selector-engine.min.js](lib/selector-engine.min.js) | [selector-engine-legacy.min.js](/lib/selector-engine-legacy.min.js) |
 | --- | --- |
-| 3.7kb gzipped | 4.0kb gzipped |
+| 3.75kb gzipped | 4.0kb gzipped |
 | Takes advantage of more modern features, providing better performance. | Ensures compatibility at a *minor* performance cost. |
 | Supports: - Chrome 4 - Firefox 3.5 - IE 9 - Opera 9.8 - Safari 4 | Supports: - Chrome 1 - Firefox 2 - IE 6 - Opera 9.8 - Safari 1 |
 

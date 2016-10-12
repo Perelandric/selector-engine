@@ -1,11 +1,5 @@
 
-var re_trim = /(?:^\s+|\s+$)/g
-,   cache = {}
-,   selCache = {}
 
-//  ,   re_simpleTagSelector = /^[a-zA-Z][-\w]+(?:\s*,\s*|$)/
-//  ,   re_simpleIdSelector = /^#[a-zA-Z][-\w]+(?:\s*,\s*|$)/
-//  ,   re_simpleClassSelector = /^.[a-zA-Z][-\w]+(?:\s*,\s*|$)/
 
 
 /**
@@ -51,6 +45,10 @@ function SelectorGroup(strTok) {
 
     const selObject = new Selector(source)
 
+    if (selObject.hasPseudoElem) {
+      continue // Selectors with a pseudo-element are ignored.
+    }
+
     hasUniversal = hasUniversal || selObject.qualifier === "*"
 
     if (!subGroups.hasOwnProperty(selObject.qualifier)) {
@@ -59,46 +57,40 @@ function SelectorGroup(strTok) {
     subGroups[selObject.qualifier].push(selObject)
   }
 
-  // Convert the subGroups object into an Array of subGroup Arrays
-  this._doSubGroups(subGroups, hasUniversal)
+  // Convert the subGroups object into an Array of subGroup Arrays. If there's
+  // at least one "universal" selector, all selectors are grouped into a single
+  // subGroup.
+  this.subGroups = []
+
+  for (var key in subGroups) {
+    var sg = subGroups[key]
+
+    // Could be empty because of pseudoElem---v
+    if (!subGroups.hasOwnProperty(key) || !sg.length) { continue }
+
+    // If at least one had a universal selector, put them all in one subgroup.
+    if (hasUniversal) {
+
+      // The qualifier for all selectors in a subgroup should match, so make
+      // them all the universal qualifier.
+      for (var i = 0; i < sg.length; i+=1) {
+        sg[i].qualifier = "*"
+      }
+
+      if (this.subGroups[0]) {
+        this.subGroups[0].push.apply(this.subGroups[0], sg)
+      } else {
+        this.subGroups[0] = sg
+      }
+
+    } else {
+      this.subGroups.push(sg)
+    }
+  }
 
   // Cache the selector if it wasn't a Lexer.
   if (!isLexer) {
     cache[strTok] = this
-  }
-}
-
-
-/**
- * Takes the object holding the subGroups, and converts it into an Array of
- * subGroups for this SelectorGroup. If there's at least one "universal"
- * selector, all selectors are grouped into a single subGroup.
- */
-SelectorGroup.prototype._doSubGroups = function(subGroups, hasUniversal) {
-  this.subGroups = []
-
-  for (var key in subGroups) {
-    if (!subGroups.hasOwnProperty(key)) { continue }
-
-    // If at least one had a universal selector, put them all in one subgroup.
-    if (hasUniversal) {
-      if (this.subGroups[0]) {
-        this.subGroups[0].push.apply(this.subGroups[0], subGroups[key])
-      } else {
-        this.subGroups[0] = subGroups[key]
-      }
-
-    } else {
-      this.subGroups.push(subGroups[key])
-    }
-  }
-
-  if (hasUniversal) {
-    // The qualifier for all selectors in a subgroup should match, so make
-    // them all the universal qualifier.
-    for (var i = 0, sg = this.subGroups[0]; i < sg.length; i = i + 1) {
-      sg[i].qualifier = "*"
-    }
   }
 }
 
@@ -134,7 +126,7 @@ SelectorGroup.prototype.selectFirstFrom = function(root) {
     this.potentialsLoop(root, i, function(el) {
       // Keep the one that appears first on the DOM
       res = res && sorter(res, el) < 0 ? res : el
-      return true
+      return true // break the potentialsLoop
     })
   }
 
@@ -261,8 +253,13 @@ function Selector(source) {
     if (!n || n.kind === ',') {
       source.reconsume()
       break
+    }
 
-    } else if (doCombinator) {
+    if (this.hasPseudoElem) { // A pseudo-element must be the last simple selector
+      throw errInvalidSelector
+    }
+
+    if (doCombinator) {
       if (source.prevent_combinator) {
         throw errInvalidSelector
       }
@@ -297,7 +294,11 @@ function Selector(source) {
     throw errInvalidSelector
   }
 
-  this.parts.push(COMBINATOR_NONE_REUSE)
+  if (this.hasPseudoElem) {
+    this.parts = null // pseudo-elements never match, so drop all the data
+  } else {
+    this.parts.push(COMBINATOR_NONE_REUSE)
+  }
 
   this.source = null
 
@@ -306,6 +307,8 @@ function Selector(source) {
     selCache[potentialSel] = this
   }
 }
+
+Selector.prototype.hasPseudoElem = false
 
 
 const temp_sequence = []
@@ -351,11 +354,22 @@ Selector.prototype.makeSimpleSequence = function() {
       //  whitespace) is needed by the main loop, so reconsume
       this.source.reconsume()
       break OUTER
+    }
 
+    if (this.hasPseudoElem) {
+      throw errInvalidSelector
+    }
+
+    switch (n.kind) {
     case PSEUDO_TOKEN:
-      if (n.subKind === SCOPE) { // Make sure :scope is always handled first
+      switch (n.subKind) { // Make sure :scope is always handled first
+      case SCOPE:
         temp_sequence.unshift(n)
-        break
+        continue
+
+      case PSEUDO_ELEMENT:
+        this.hasPseudoElem = true
+        continue
       }
       /*fallthrough*/
 
@@ -363,6 +377,7 @@ Selector.prototype.makeSimpleSequence = function() {
     case CLASS_TOKEN: case PSEUDO_FUNCTION_TOKEN:
       temp_sequence.push(n)
       break
+
 
     default:
       throw errInvalidSelector

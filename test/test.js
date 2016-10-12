@@ -24,6 +24,7 @@ jsdom.env(
     QuickTest({
       name: "All selector tests"
     },
+
     function simple_div(t) {
       t.equal(doc.body.firstElementChild, outer)
     },
@@ -61,6 +62,10 @@ jsdom.env(
 
       t.true(Query.matches(p, sel))
       t.equal(p, Query.one(outer, sel))
+    },
+
+    function pseudo_element(t) {
+      t.false(Query.matches(outer, "div::first-line"))
     })
   }
 )

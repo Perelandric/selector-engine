@@ -5,9 +5,17 @@
 
 
 /** @define {boolean} */
-const DEBUG_MODE = false, LEGACY = false
+const DEBUG_MODE = false
+,     LEGACY = false
 
 const Query = global["Query"] = {}
+,     re_trim = /(?:^\s+|\s+$)/g
+,     cache = {}
+,     selCache = {}
+
+//  ,   re_simpleTagSelector = /^[a-zA-Z][-\w]+(?:\s*,\s*|$)/
+//  ,   re_simpleIdSelector = /^#[a-zA-Z][-\w]+(?:\s*,\s*|$)/
+//  ,   re_simpleClassSelector = /^.[a-zA-Z][-\w]+(?:\s*,\s*|$)/
 
 Query["one"] = function(elem, selector) {
   if (arguments.length === 1) {
@@ -24,10 +32,6 @@ Query["all"] = function(elem, selector) {
   return new SelectorGroup(selector).selectFrom(elem)
 }
 Query["matches"] = function(elem, selector) {
-  if (arguments.length === 1) {
-    selector = elem
-    elem = document
-  }
   return new SelectorGroup(selector).matches(elem)
 }
 

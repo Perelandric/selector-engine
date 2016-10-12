@@ -439,9 +439,6 @@ var pseudoClassFns = {
   "only-of-type": function(el) {
     return pseudoClassFns["first-of-type"](el) &&
             pseudoClassFns["last-of-type"](el)
-  },
-  "no-tok": function() {
-    return false // Valid, but won't match anything
   }
 }
 

@@ -44,6 +44,11 @@ const errInvalidSelector = new Error("Invalid selector")
 ,   MATCHES_TOKEN = 23 // :matches pseudo function
 ,   ATTR_INSENSITIVE_TOKEN = 24 // case insensitive attribute values
 
+// Pseudo elements
+,   PSEUDO_ELEMENT = 25 // subKind for pseudo-elements
+
+,   PSEUDO_ELEMENT_REUSE = new Token(PSEUDO_TOKEN)
+
 
 // Reusable, stateless objects
 ,   COMBINATOR_DESCENDANT_REUSE = new Token(COMBINATOR)
@@ -53,7 +58,6 @@ const errInvalidSelector = new Error("Invalid selector")
 ,   COMBINATOR_NONE_REUSE = new Token(COMBINATOR)
 
 ,   UNIVERSAL_TAG_REUSE = new Token(UNIVERSAL_TAG_TOKEN)
-//,   NO_TOKEN_REUSE = new Token(NO_TOKEN, "no-tok")
 ,   COMMA_TOKEN_REUSE = new Token(',', ',')
 ,   WHITESPACE_TOKEN_REUSE = new Token(WHITESPACE_TOKEN, ' ')
 
@@ -89,6 +93,8 @@ COMBINATOR_CHILD_REUSE.subKind = CHILD_COMB
 COMBINATOR_ADJACENT_REUSE.subKind = ADJACENT_SIB_COMB
 COMBINATOR_GENERAL_REUSE.subKind = GENERAL_SIB_COMB
 COMBINATOR_NONE_REUSE.subKind = NO_COMB
+
+PSEUDO_ELEMENT_REUSE.subKind = PSEUDO_ELEMENT
 
 /**
  * @constructor
@@ -245,8 +251,7 @@ Lexer.prototype.next = function() {
       case "first-letter":
       case "before":
       case "after":
-        this.curr = new Token(PSEUDO_TOKEN, name)
-        this.curr.subKind = pseudoClassFns["no-tok"]
+        this.curr = PSEUDO_ELEMENT_REUSE
         break
 
       default:

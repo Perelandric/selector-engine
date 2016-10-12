@@ -136,7 +136,6 @@ Token.prototype.b = 0
   )
 */
 
-
 /**
  * @constructor
  * @private
@@ -201,21 +200,6 @@ Lexer.prototype.next = function() {
   }
 
   switch(r) {
-  // Whitespace
-  case ' ': case '\t': case '\n':
-    for (;;) { // Discard any subsequent whitespace
-      switch(getChar(this.sel, this.i += 1)) {
-      case ' ': case '\t': case '\n':
-        continue
-      }
-      this.i-=1 // Reset to before the last non-space
-      break
-    }
-
-    this.curr = WHITESPACE_TOKEN_REUSE
-    break
-
-
   // Comma
   case ',':
     this.curr = COMMA_TOKEN_REUSE
@@ -306,16 +290,25 @@ Lexer.prototype.next = function() {
     break
 
 
-  default: // ID, CLASS or TAG
-    var tok = r === '#' ? ID_TOKEN : r === '.' ? CLASS_TOKEN : TAG_TOKEN
+  // ID, CLASS, TAG or Whitespace
+  default:
+    var t = getSpaceAt(this.sel, this.i)
 
-    if (tok === TAG_TOKEN) {
+    if (t > 0) {
+      this.i += t-1
+      this.curr = WHITESPACE_TOKEN_REUSE
+      break
+    }
+
+    t = r === '#' ? ID_TOKEN : r === '.' ? CLASS_TOKEN : TAG_TOKEN
+
+    if (t === TAG_TOKEN) {
       this.i -= 1 // make sure we include the first character for a tag
     }
 
     if ((temp = re_consumeName.exec(this.sel.slice(this.i+1)))) {
       this.i += temp[0].length
-      this.curr = new Token(tok, temp[0])
+      this.curr = new Token(t, temp[0])
       break
     }
 

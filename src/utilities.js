@@ -10,6 +10,31 @@ function getChar(s, i) {
 }
 
 
+/**
+ * Returns the number of consecutive spaces found starting at the given index or
+ * -1 if the index was out of bounds.
+ *
+ * @param {!string} s
+ * @param {!number} i
+ * @return {number}
+ */
+function getSpaceAt(s, i) {
+  var res = 0
+
+  for (;;) {
+    switch(getChar(s, i+res)) {
+    case ' ': case '\t': case '\n':
+      res += 1
+      continue
+
+    case "": case undefined:
+      return res || -1
+    }
+    return res
+  }
+}
+
+
  /**
  * @param {!Element} el
  * @return {string}

@@ -1,6 +1,4 @@
 
-const re_twoSpaceOnceSpaceOrEmpty = /^\s\s?$|^$/
-
 const needTagFix = function() {
   if (LEGACY) {
     const testElem = document.createElement("div")
@@ -248,13 +246,18 @@ function dashMatch(target, pattern) {
  * @return {!boolean}
  */
 function fieldMatch(target, pattern) {
-  var idx = -1
+  var idx = 0
 
-  while ((idx = target.indexOf(pattern, idx+1)) !== -1) {
-    if (re_twoSpaceOnceSpaceOrEmpty.test(
-                getChar(target, idx-1) + getChar(target, idx+pattern.length))) {
+  while ((idx = target.indexOf(pattern, idx)) !== -1) {
+    // Both before and after there's either a space or no character
+    if (getSpaceAt(target, idx-1) && getSpaceAt(target, idx+pattern.length)) {
       return true
     }
+
+    // We move one more character extra past the end of the match, since the
+    // last character in `pattern` is definitely not a space, so it would
+    // not work as the boundary of an adjacent field match.
+    idx += pattern.length + 1
   }
 
   return false
@@ -290,7 +293,7 @@ function isNth(el, simple, nn, fromEnd) {
     curr = fromEnd ? prevElemSib(curr) : nextElemSib(curr)
   }
 
-  return idx === 0 || idx % nth === 0 && idx / nth >= 0
+  return idx === 0 || (idx % nth === 0 && idx / nth >= 0)
 }
 
 
@@ -306,7 +309,7 @@ const hiddenOrButton = {
 /**
  * Selector engine matcher functions for pseudo classes.
  */
-var pseudoClassFns = {
+const pseudoClassFns = {
   "root": function(el) {
     return el.ownerDocument.documentElement === el
   },

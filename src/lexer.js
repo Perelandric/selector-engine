@@ -144,7 +144,7 @@ function Lexer(source, endChar, prevent_not, prevent_combinator) {
 }
 
 
-var arrEmptyString = [""]
+const arrEmptyString = [""]
 
 
 /**
@@ -330,7 +330,7 @@ Lexer.prototype.getPseudoFunction = function(name) {
 
     n = block.nextAfterSpace()
 
-    if (n.kind === TAG_TOKEN) { // Comes through as a TAG, so  relabel
+    if (n.kind === TAG_TOKEN) { // Comes through as a TAG, so relabel
       n.kind = PSEUDO_FUNCTION_TOKEN
       n.subKind = LANG_TOKEN
 
@@ -378,12 +378,10 @@ Lexer.prototype.reconsume = function() {
  * @return {Token}
  */
 Lexer.prototype.nextAfterSpace = function() {
-  var n
-
-  while ((n = this.next()) && n === WHITESPACE_TOKEN) {
+  while (this.next() === WHITESPACE_TOKEN) {
   }
 
-  return n
+  return this.curr
 }
 
 

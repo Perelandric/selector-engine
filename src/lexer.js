@@ -5,7 +5,7 @@ const errInvalidSelector = new Error("Invalid selector")
 ,   UNIVERSAL_TAG_TOKEN = 1
 ,   PSEUDO_FUNCTION_TOKEN = 2
 ,   WHITESPACE_TOKEN = 3
-
+,   COMMA_TOKEN = 4
 
 // Combinators
 ,   COMBINATOR_CHILD = 5
@@ -46,12 +46,6 @@ const errInvalidSelector = new Error("Invalid selector")
 // Pseudo elements
 ,   PSEUDO_ELEMENT = 25 // subKind for pseudo-elements
 
-// Reusable, stateless objects
-,   PSEUDO_ELEMENT_REUSE = new Token(PSEUDO_TOKEN)
-,   UNIVERSAL_TAG_REUSE = new Token(UNIVERSAL_TAG_TOKEN)
-,   COMMA_TOKEN_REUSE = new Token(',', ',')
-,   WHITESPACE_TOKEN_REUSE = new Token(WHITESPACE_TOKEN, ' ')
-
 ,   re_consumeName =
       /^-?(?:[_a-zA-Z\u0080-\uFFFF]|\\[^\n]?|--\d?)(?:[-\w\u0080-\uFFFF]|\\[^\n]?)*/
 
@@ -78,8 +72,6 @@ const errInvalidSelector = new Error("Invalid selector")
   // 6: odd
 ,   re_makeNth =
       /^(?:([-+]?\d+)|([-+]?\d*)?n\s*(?:([-+])\s*(\d+))?|(even)|(odd))\s*\)/i
-
-PSEUDO_ELEMENT_REUSE.subKind = PSEUDO_ELEMENT
 
 /**
  * @constructor
@@ -187,7 +179,7 @@ Lexer.prototype.next = function() {
   switch(r) {
   // Comma
   case ',':
-    this.curr = COMMA_TOKEN_REUSE
+    this.curr = COMMA_TOKEN
     break
 
 
@@ -214,31 +206,29 @@ Lexer.prototype.next = function() {
 
     this.i += name.length
 
-    if (verifyPseudoElem) { // Verify valid pseudo-element for 2 colons
-      switch (name) {
-      case "first-line":
-      case "first-letter":
-      case "before":
-      case "after":
-        this.curr = PSEUDO_ELEMENT_REUSE
-        break
-
-      default:
-        throw errInvalidSelector
-      }
-
-    } else if (getChar(this.sel, this.i + 1) === '(') { // Pseudo function
+    if (getChar(this.sel, this.i + 1) === '(') { // Pseudo function
       this.i+=1 // Discard
       this.curr = this.getPseudoFunction(name)
 
     } else {
       this.curr = new Token(PSEUDO_TOKEN, name)
       this.curr.subKind = name === "scope" ? SCOPE : pseudoClassFns[name]
+    }
 
-      if (!this.curr.subKind) {
-        throw errInvalidSelector
+    if (!this.curr || !this.curr.subKind) {
+      switch (name) {
+      case "first-line":
+      case "first-letter":
+      case "before":
+      case "after":
+        this.curr = PSEUDO_ELEMENT
       }
     }
+
+    if (verifyPseudoElem && this.curr !== PSEUDO_ELEMENT) {
+      throw errInvalidSelector
+    }
+
     break
 
   // Attribute
@@ -271,7 +261,7 @@ Lexer.prototype.next = function() {
 
   // Universal tag
   case '*':
-    this.curr = UNIVERSAL_TAG_REUSE
+    this.curr = UNIVERSAL_TAG_TOKEN
     break
 
 
@@ -281,7 +271,7 @@ Lexer.prototype.next = function() {
 
     if (t > 0) {
       this.i += t-1
-      this.curr = WHITESPACE_TOKEN_REUSE
+      this.curr = WHITESPACE_TOKEN
       break
     }
 
@@ -387,7 +377,7 @@ Lexer.prototype.reconsume = function() {
 Lexer.prototype.nextAfterSpace = function() {
   var n
 
-  while ((n = this.next()) && n.kind === WHITESPACE_TOKEN) {
+  while ((n = this.next()) && n === WHITESPACE_TOKEN) {
   }
 
   return n

@@ -28,7 +28,7 @@ function SelectorGroup(strTok) {
 
   // Continue to compile if any remain, and check `el` at the same time
   while ((n = source.nextAfterSpace())) {
-    var isComma = n.kind === ','
+    var isComma = n === COMMA_TOKEN
 
     if (!first && !isComma && DEBUG_MODE) {
       throw errInternal
@@ -243,13 +243,13 @@ function Selector(source) {
 
   while ((n = source.next())) {
     // Track if whitespace was found in case it's a descendant combinator.
-    var isSpace = n.kind === WHITESPACE_TOKEN
+    var isSpace = n === WHITESPACE_TOKEN
 
     if (isSpace) {
       n = source.nextAfterSpace()
     }
 
-    if (!n || n.kind === ',') {
+    if (!n || n === COMMA_TOKEN) {
       source.reconsume()
       break
     }
@@ -335,25 +335,22 @@ function Sequence(source, selector) {
 
   var n = source.nextAfterSpace()
 
-  if (!n || n.kind === ',') {
+  if (!n || n === COMMA_TOKEN) {
     throw errInvalidSelector
   }
 
-  switch (n.kind) {
-  case TAG_TOKEN:
-    selector.qualifier = this.tag = n.value.toUpperCase()
-
-  case UNIVERSAL_TAG_TOKEN:
-    break
-
-  default:
-    source.reconsume()
+  if (n !== UNIVERSAL_TAG_TOKEN) {
+    if (n.kind === TAG_TOKEN) {
+      selector.qualifier = this.tag = n.value.toUpperCase()
+    } else {
+      source.reconsume()
+    }
   }
 
   OUTER:
   while ((n = source.next())) {
-    switch (n.kind) {
-    case ',': case WHITESPACE_TOKEN: case COMBINATOR_CHILD:
+    switch (n) {
+    case COMMA_TOKEN: case WHITESPACE_TOKEN: case COMBINATOR_CHILD:
     case COMBINATOR_ADJACENT: case COMBINATOR_GENERAL:
       // Comma is needed by the GroupSelector, and Combinators (including
       //  whitespace) is needed by the main loop, so reconsume
@@ -365,9 +362,14 @@ function Sequence(source, selector) {
       throw errInvalidSelector
     }
 
+    if (n === PSEUDO_ELEMENT) {
+      selector.hasPseudoElem = true
+      selector.autoFail = true
+      continue
+    }
+
     switch (n.kind) {
     case PSEUDO_TOKEN:
-
       switch (n.subKind) {
       case SCOPE:
         if (selector.hasScope) { // `:scope` in 2 different Sequences fails
@@ -375,12 +377,8 @@ function Sequence(source, selector) {
         }
         this.hasScope = true
         continue
-
-      case PSEUDO_ELEMENT:
-        selector.hasPseudoElem = true
-        selector.autoFail = true
-        continue
       }
+
       /*fallthrough*/
 
     case ID_TOKEN: case ATTR_TOKEN: case ATTR_INSENSITIVE_TOKEN:

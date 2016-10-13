@@ -1,17 +1,16 @@
 const errInvalidSelector = new Error("Invalid selector")
 ,   errInternal = new Error("Internal error")
 
-,   NO_TOKEN = 0
-,   UNIVERSAL_TAG_TOKEN = 1
+,   UNIVERSAL_TAG_TOKEN = "*"
 ,   PSEUDO_FUNCTION_TOKEN = 2
 ,   WHITESPACE_TOKEN = 3
-,   COMMA_TOKEN = 4
+,   COMMA_TOKEN = ','
 
 // Combinators
-,   COMBINATOR_CHILD = 5
+,   COMBINATOR_CHILD = '>'
 ,   COMBINATOR_DESCENDANT = 6
-,   COMBINATOR_ADJACENT = 7
-,   COMBINATOR_GENERAL = 8
+,   COMBINATOR_ADJACENT = '+'
+,   COMBINATOR_GENERAL = '~'
 
 
 ,   ID_TOKEN = 10
@@ -78,16 +77,14 @@ const errInvalidSelector = new Error("Invalid selector")
  * @private
  * @param {(string|number)} kind
  * @param {string=} value
+ * @param {*=} subKind
  */
-function Token(kind, value) {
+function Token(kind, value, subKind) {
   this.kind = kind
   this.value = value
+  this.subKind = subKind
 }
-Token.prototype.kind = NO_TOKEN
-Token.prototype.subKind = NO_TOKEN
-Token.prototype.subSelector = null
 Token.prototype.name = "" // Used for functions and attribute selectors
-Token.prototype.value = ""
 Token.prototype.a = 0
 Token.prototype.b = 0
 
@@ -177,18 +174,15 @@ Lexer.prototype.next = function() {
   }
 
   switch(r) {
-  // Comma
-  case ',':
-    this.curr = COMMA_TOKEN
-    break
-
+  // Comma or "*"
+  case COMMA_TOKEN:
+  case UNIVERSAL_TAG_TOKEN:
 
   // Combinators (not descendant ' ')
-  case '>': this.curr = COMBINATOR_CHILD
-    break
-  case '+': this.curr = COMBINATOR_ADJACENT
-    break
-  case '~': this.curr = COMBINATOR_GENERAL
+  case COMBINATOR_CHILD:
+  case COMBINATOR_ADJACENT:
+  case COMBINATOR_GENERAL:
+    this.curr = r
     break
 
   // Pseudo
@@ -211,8 +205,7 @@ Lexer.prototype.next = function() {
       this.curr = this.getPseudoFunction(name)
 
     } else {
-      this.curr = new Token(PSEUDO_TOKEN, name)
-      this.curr.subKind = pseudoClassFns[name]
+      this.curr = new Token(PSEUDO_TOKEN, name, pseudoClassFns[name])
     }
 
     if (!this.curr || !this.curr.subKind) {
@@ -243,28 +236,20 @@ Lexer.prototype.next = function() {
     }
     this.i += parts[0].length
 
-    this.curr = new Token(parts[5] ? ATTR_INSENSITIVE_TOKEN : ATTR_TOKEN)
+    this.curr = new Token(
+      parts[5] ? ATTR_INSENSITIVE_TOKEN : ATTR_TOKEN,
+      parts[3] ? parts[3].slice(1, -1) : parts[4],
+      parts[2] || HAS_ATTR_TOKEN
+    )
     this.curr.name = parts[1]
 
-    if (parts[2]) {
-      this.curr.subKind = parts[2]
-      this.curr.value = parts[3] ? parts[3].slice(1, -1) : parts[4]
-      if (parts[5]) {
+    if (parts[5]) { // case insensitive
+      if (parts[2]) { // checks a value
         this.curr.value = this.curr.value.toLowerCase()
-      }
-
-    } else {
-      this.curr.subKind = HAS_ATTR_TOKEN
-      if (parts[5]) { // Case insensitivity makes no sense with no value
+      } else {
         throw errInvalidSelector
       }
     }
-    break
-
-
-  // Universal tag
-  case '*':
-    this.curr = UNIVERSAL_TAG_TOKEN
     break
 
 
@@ -298,72 +283,60 @@ Lexer.prototype.next = function() {
 
 
 Lexer.prototype.getPseudoFunction = function(name) {
-  var n = new Token(PSEUDO_FUNCTION_TOKEN, name.toLowerCase())
-  ,   block
+  switch (name.toLowerCase()) {
 
-  switch (n.value) {
+  //case "has":
+
   case "not":
     if (this.prevent_not) {
       throw errInvalidSelector
     }
 
-    // New Lexer with the same source that halts on `)`
-    block = new Lexer(this, ')', true, false)
-
-    n.subSelector = new SelectorGroup(block)
-    n.subKind = NOT_TOKEN
-    break
+    return new Token(
+      PSEUDO_FUNCTION_TOKEN,
+      // New Lexer with the same source that halts on `)`
+      new SelectorGroup(new Lexer(this, ')', true, false)),
+      NOT_TOKEN
+    )
 
   case "matches":
-    // New Lexer with the same source that halts on `)`
-    block = new Lexer(this, ')', false, true)
-
-    n.subSelector = new SelectorGroup(block)
-    n.subKind = MATCHES_TOKEN
+    return new Token(
+      PSEUDO_FUNCTION_TOKEN,
+      // New Lexer with the same source that halts on `)`
+      new SelectorGroup(new Lexer(this, ')', false, true)),
+      MATCHES_TOKEN
+    )
     break
-
-  //case "has":
 
   case "lang":
     // New Lexer with the same source that halts on `)`
-    block = new Lexer(this, ')', true, true)
-
-    n = block.nextAfterSpace()
+    var n = new Lexer(this, ')', true, true).nextAfterSpace()
 
     if (n.kind === TAG_TOKEN) { // Comes through as a TAG, so relabel
       n.kind = PSEUDO_FUNCTION_TOKEN
       n.subKind = LANG_TOKEN
+      return n
 
     } else {
       throw errInvalidSelector
     }
-    break
+
 
   case "nth-child":
-    n.subKind = NTH_CHILD_TOKEN
-    return this.makeNth(n)
+    return this.makeNth(new Token(PSEUDO_FUNCTION_TOKEN, 0, NTH_CHILD_TOKEN))
 
   case "nth-last-child":
-    n.subKind = NTH_LAST_CHILD_TOKEN
-    return this.makeNth(n)
+    return this.makeNth(new Token(PSEUDO_FUNCTION_TOKEN, 0, NTH_LAST_CHILD_TOKEN))
 
   case "nth-of-type":
-    n.subKind = NTH_OF_TYPE_TOKEN
-    return this.makeNth(n)
+    return this.makeNth(new Token(PSEUDO_FUNCTION_TOKEN, 0, NTH_OF_TYPE_TOKEN))
 
   case "nth-last-of-type":
-    n.subKind = NTH_LAST_OF_TYPE_TOKEN
-    return this.makeNth(n)
+    return this.makeNth(new Token(PSEUDO_FUNCTION_TOKEN, 0, NTH_LAST_OF_TYPE_TOKEN))
 
   default:
     throw errInvalidSelector
   }
-
-  if (block.next()) {
-    throw errInvalidSelector // There was more in the block, so it's invalid
-  }
-
-  return n
 }
 
 
@@ -390,8 +363,8 @@ Lexer.prototype.nextAfterSpace = function() {
  * @return {!Token}
  */
 Lexer.prototype.makeNth = function(n) {
-  n.a = 0
-  n.b = 0
+  var a = 0
+  ,   b = 0
 
   const parts = re_makeNth.exec(this.sel.slice(this.i+1))
 
@@ -401,14 +374,14 @@ Lexer.prototype.makeNth = function(n) {
   this.i += parts[0].length
 
   if (parts[1]) {
-    n.b = +parts[1] // When only a number, it gets assigned to `b` position
+    b = +parts[1] // When only a number, it gets assigned to `b` position
 
   } else if (parts[5]) {
-    n.a = 2
+    a = 2
 
   } else if (parts[6]) {
-    n.a = 2
-    n.b = 1
+    a = 2
+    b = 1
 
   } else {
     const aStr = parts[2]
@@ -416,20 +389,22 @@ Lexer.prototype.makeNth = function(n) {
 
     if (!aStr || aStr === '+' || aStr === '-') {
       // If '-', -1 else must be '+' or empty string, so 1
-      n.a = aStr === '-' ? -1 : 1
+      a = aStr === '-' ? -1 : 1
 
     } else {
-      n.a = +aStr
+      a = +aStr
     }
 
     if (bStr) {
-      n.b = +bStr
+      b = +bStr
     }
 
-    if (DEBUG_MODE && (isNaN(n.a) || isNaN(n.b))) {
+    if (DEBUG_MODE && (isNaN(a) || isNaN(b))) {
       throw errInternal
     }
   }
+
+  n.value = [a, b]
 
   return n
 }

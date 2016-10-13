@@ -132,11 +132,11 @@ function compare_sequence(root, el, seq) {
     case PSEUDO_FUNCTION_TOKEN:
       switch (simple.subKind) {
       case NOT_TOKEN:
-        if (!simple.subSelector["matches"](el)) { continue }
+        if (!simple.value["matches"](el)) { continue }
         return false
 
       case MATCHES_TOKEN:
-        if (simple.subSelector["matches"](el)) { continue }
+        if (simple.value["matches"](el)) { continue }
         return false
 
       case NTH_CHILD_TOKEN:
@@ -267,7 +267,7 @@ function fieldMatch(target, pattern) {
  * @return {!boolean}
  */
 function isNth(el, simple, nn, fromEnd) {
-  const nth = simple.a
+  const nth = simple.value[0]
 //  ,   offset = simple.b
 //  ,   cap = nth <= 0 ? offset : Infinity // Don't traverse farther than needed
 
@@ -275,7 +275,7 @@ function isNth(el, simple, nn, fromEnd) {
     return false
   }
 
-  var idx = 1-simple.b // 1-based index, less the offset
+  var idx = 1-simple.value[1] // 1-based index, less the offset
   ,   curr = fromEnd ? lastElemChild(el.parentNode) : firstElemChild(el.parentNode)
 
   while (curr !== el /*&& idx <= cap*/) {

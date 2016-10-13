@@ -41,6 +41,7 @@ function _matches(root, origEl, subGroup) {
     ,   el = origEl
     ,   haltOnFail = false
     ,   lastCombinatorIdx = -1
+    ,   thisSeqQualName = ""
 
 
     // Process starting at the end so that we're doing a RtoL evaluation.
@@ -50,6 +51,7 @@ function _matches(root, origEl, subGroup) {
       if (part.kind === COMBINATOR) {
       // If we have a combinator, traverse to the related element
         haltOnFail = false
+        thisSeqQualName = ""
 
         switch (part.subKind) {
         case NO_COMB:           haltOnFail = true; break // Far right end
@@ -71,17 +73,17 @@ function _matches(root, origEl, subGroup) {
       }
 
 
-      var temp = ""
-      ,   thisSeqQualName = ""
-
+      // TODO: Maybe move TAG to its own property so that it's immediately
+      // available for `thisSeqQualName`, which would let us move this switch
+      // out to a separate function.
+      
       switch (part.kind) {
       case UNIVERSAL_TAG_TOKEN:
-        thisSeqQualName = ""
         continue // Always matches
 
       case TAG_TOKEN:
         thisSeqQualName = part.value
-        
+
         if (nodeName(el) === thisSeqQualName) { continue }
         break
 
@@ -91,10 +93,6 @@ function _matches(root, origEl, subGroup) {
 
       case ID_TOKEN:
         if (el.id === part.value) { continue }
-        break
-
-      // A selector that doesn't return any element (e.g. ::first-letter)
-      case NO_TOKEN:
         break
 
 
@@ -153,42 +151,43 @@ function _matches(root, origEl, subGroup) {
       // Attribute selectors
       case ATTR_TOKEN:
       case ATTR_INSENSITIVE_TOKEN:
-        if ((temp = getAttr(el, part.name)) == null) {
+        var attrVal = getAttr(el, part.name)
+        if (attrVal == null) {
           break
         }
 
         if (part.kind === ATTR_INSENSITIVE_TOKEN) {
-          temp = temp.toLowerCase()
+          attrVal = attrVal.toLowerCase()
         }
 
         switch (part.subKind) {
         case EQUAL_ATTR_TOKEN:
-          if (temp === part.value) { continue }
+          if (attrVal === part.value) { continue }
           break
 
         case PREFIX_MATCH_TOKEN:
-          if (temp.lastIndexOf(part.value, 0) === 0) { continue }
+          if (attrVal.lastIndexOf(part.value, 0) === 0) { continue }
           break
 
         case SUFFIX_MATCH_TOKEN:
-          if (temp.lastIndexOf(part.value)+part.value.length === temp.length) {
+          if (attrVal.lastIndexOf(part.value)+part.value.length === attrVal.length) {
             continue
           }
           break
 
         case DASH_MATCH_TOKEN:
-          if (dashMatch(temp, part.value)) { continue }
+          if (dashMatch(attrVal, part.value)) { continue }
           break
 
         case INCLUDE_MATCH_TOKEN:
-          if (fieldMatch(temp, part.value)) { continue }
+          if (fieldMatch(attrVal, part.value)) { continue }
           break
 
         case HAS_ATTR_TOKEN:
           continue // Already know it isn't null, so it has the attr
 
         case SUBSTRING_MATCH_TOKEN:
-          if (temp.indexOf(part.value) !== -1) { continue }
+          if (attrVal.indexOf(part.value) !== -1) { continue }
           break
 
         default:

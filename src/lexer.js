@@ -7,13 +7,12 @@ const errInvalidSelector = new Error("Invalid selector")
 ,   WHITESPACE_TOKEN = 3
 
 
-,   COMBINATOR = 4
-// Combinator subKinds
-,   CHILD_COMB = 5
-,   DESCENDANT_COMB = 6
-,   ADJACENT_SIB_COMB = 7
-,   GENERAL_SIB_COMB = 8
-,   NO_COMB = 9
+// Combinators
+,   COMBINATOR_CHILD = 5
+,   COMBINATOR_DESCENDANT = 6
+,   COMBINATOR_ADJACENT = 7
+,   COMBINATOR_GENERAL = 8
+
 
 ,   ID_TOKEN = 10
 ,   TAG_TOKEN = 11
@@ -47,16 +46,8 @@ const errInvalidSelector = new Error("Invalid selector")
 // Pseudo elements
 ,   PSEUDO_ELEMENT = 25 // subKind for pseudo-elements
 
-,   PSEUDO_ELEMENT_REUSE = new Token(PSEUDO_TOKEN)
-
-
 // Reusable, stateless objects
-,   COMBINATOR_DESCENDANT_REUSE = new Token(COMBINATOR)
-,   COMBINATOR_CHILD_REUSE = new Token(COMBINATOR)
-,   COMBINATOR_ADJACENT_REUSE = new Token(COMBINATOR)
-,   COMBINATOR_GENERAL_REUSE = new Token(COMBINATOR)
-,   COMBINATOR_NONE_REUSE = new Token(COMBINATOR)
-
+,   PSEUDO_ELEMENT_REUSE = new Token(PSEUDO_TOKEN)
 ,   UNIVERSAL_TAG_REUSE = new Token(UNIVERSAL_TAG_TOKEN)
 ,   COMMA_TOKEN_REUSE = new Token(',', ',')
 ,   WHITESPACE_TOKEN_REUSE = new Token(WHITESPACE_TOKEN, ' ')
@@ -87,12 +78,6 @@ const errInvalidSelector = new Error("Invalid selector")
   // 6: odd
 ,   re_makeNth =
       /^(?:([-+]?\d+)|([-+]?\d*)?n\s*(?:([-+])\s*(\d+))?|(even)|(odd))\s*\)/i
-
-COMBINATOR_DESCENDANT_REUSE.subKind = DESCENDANT_COMB
-COMBINATOR_CHILD_REUSE.subKind = CHILD_COMB
-COMBINATOR_ADJACENT_REUSE.subKind = ADJACENT_SIB_COMB
-COMBINATOR_GENERAL_REUSE.subKind = GENERAL_SIB_COMB
-COMBINATOR_NONE_REUSE.subKind = NO_COMB
 
 PSEUDO_ELEMENT_REUSE.subKind = PSEUDO_ELEMENT
 
@@ -207,11 +192,11 @@ Lexer.prototype.next = function() {
 
 
   // Combinators (not descendant ' ')
-  case '>': this.curr = COMBINATOR_CHILD_REUSE
+  case '>': this.curr = COMBINATOR_CHILD
     break
-  case '+': this.curr = COMBINATOR_ADJACENT_REUSE
+  case '+': this.curr = COMBINATOR_ADJACENT
     break
-  case '~': this.curr = COMBINATOR_GENERAL_REUSE
+  case '~': this.curr = COMBINATOR_GENERAL
     break
 
   // Pseudo

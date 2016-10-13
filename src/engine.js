@@ -29,193 +29,191 @@ const needCommentFilter = LEGACY ?
  * General function to check if the given element matches any of the selectors
  * in the given subGroup.
  *
- * @param {!Element} origEl
+ * @param {!Element|Document} root
+ * @param {!Element} el
  * @param {!Array<!Selector>} subGroup
  * @return {boolean}
  */
-function _matches(root, origEl, subGroup) {
-
-  SUBGROUP_LOOP:
+function _matches(root, el, subGroup) {
   for (var i = 0; i < subGroup.length; i+=1) {
-    var selector = subGroup[i]
-    ,   el = origEl
+    if (compare_selector(root, el, subGroup[i])) {
+      return true
+    }
+  }
+
+  return false
+}
+
+
+/**
+ * Check if the given element matches the given Selector.
+ *
+ * @param {!Element|Document} root
+ * @param {!Element} el
+ * @param {!Selector} selector
+ * @return {boolean}
+ */
+function compare_selector(root, el, selector) {
+  // Process starting at the end so that we're doing a RtoL evaluation.
+  for (var j = selector.parts.length-1, combinator = 0; j > -1; j-=1) {
+    var part = selector.parts[j]
     ,   haltOnFail = false
-    ,   lastCombinatorIdx = -1
-    ,   thisSeqQualName = ""
 
+    if (part instanceof Sequence) {
+      switch (combinator) {
+      case 0:                     haltOnFail = true; break
+      case COMBINATOR_CHILD:      haltOnFail = true; /*falls through*/
+      case COMBINATOR_DESCENDANT: el = parentElement(el); break
+      case COMBINATOR_ADJACENT:   haltOnFail = true; /*falls through*/
+      case COMBINATOR_GENERAL:    el = prevElemSib(el); break
+      default: if (DEBUG_MODE) { throw errInternal }
+      }
 
-    // Process starting at the end so that we're doing a RtoL evaluation.
-    for (var j = selector.parts.length-1; j > -1; j-=1) {
-      var part = selector.parts[j]
+      if (!el) {
+        return false
+      }
 
-      if (part.kind === COMBINATOR) {
-      // If we have a combinator, traverse to the related element
-        haltOnFail = false
-        thisSeqQualName = ""
-
-        switch (part.subKind) {
-        case NO_COMB:           haltOnFail = true; break // Far right end
-        case CHILD_COMB:        haltOnFail = true; /*falls through*/
-        case DESCENDANT_COMB:   el = el.parentNode; break
-        case ADJACENT_SIB_COMB: haltOnFail = true; /*falls through*/
-        case GENERAL_SIB_COMB:  el = prevElemSib(el); break
-        default: if (DEBUG_MODE) { throw errInternal }
-        }
-
-        if (!el || el.nodeType !== 1) { // No more elems to traverse, so fail
-          return false
-        }
-
-        // Set to go back to this combinator if needed (+1 for the decrement)
-        lastCombinatorIdx = j + 1
-
+      if (compare_sequence(root, el, part)) {
         continue
       }
 
-
-      // TODO: Maybe move TAG to its own property so that it's immediately
-      // available for `thisSeqQualName`, which would let us move this switch
-      // out to a separate function.
-      
-      switch (part.kind) {
-      case UNIVERSAL_TAG_TOKEN:
-        continue // Always matches
-
-      case TAG_TOKEN:
-        thisSeqQualName = part.value
-
-        if (nodeName(el) === thisSeqQualName) { continue }
-        break
-
-      case CLASS_TOKEN:
-        if (fieldMatch(el.className, part.value)) { continue }
-        break
-
-      case ID_TOKEN:
-        if (el.id === part.value) { continue }
-        break
-
-
-      // Simple pseudos
-      case PSEUDO_TOKEN:
-        if (part.subKind === SCOPE) {
-          if (el === root) { continue }
-
-        } else if (part.subKind(el)) { continue }
-
-        break
-
-
-      // Function pseudos
-      case PSEUDO_FUNCTION_TOKEN:
-        switch (part.subKind) {
-        case NOT_TOKEN:
-          if (!part.subSelector["matches"](el)) { continue }
-          break
-
-        case MATCHES_TOKEN:
-          if (part.subSelector["matches"](el)) { continue }
-          break
-
-        case NTH_CHILD_TOKEN:
-          if (isNth(el, part, "", false)) { continue }
-          break
-
-        case NTH_LAST_CHILD_TOKEN:
-          if (isNth(el, part, "", true)) { continue }
-          break
-
-        case NTH_OF_TYPE_TOKEN: // First item in a sequence is always tag
-          if (isNth(el, part, thisSeqQualName, false)) { continue }
-          break
-
-        case NTH_LAST_OF_TYPE_TOKEN:
-          if (isNth(el, part, thisSeqQualName, true)) { continue }
-          break
-
-        case LANG_TOKEN:
-          var tempEl = el
-          while (tempEl && !tempEl.lang) { tempEl = tempEl.parentNode }
-
-          if (tempEl && dashMatch(tempEl.lang, part.value)) { continue }
-          break
-
-        default:
-          if (DEBUG_MODE) {
-            throw errInternal // Should have been caught while parsing
-          }
-        } // End function pseudos
-        break
-
-
-      // Attribute selectors
-      case ATTR_TOKEN:
-      case ATTR_INSENSITIVE_TOKEN:
-        var attrVal = getAttr(el, part.name)
-        if (attrVal == null) {
-          break
-        }
-
-        if (part.kind === ATTR_INSENSITIVE_TOKEN) {
-          attrVal = attrVal.toLowerCase()
-        }
-
-        switch (part.subKind) {
-        case EQUAL_ATTR_TOKEN:
-          if (attrVal === part.value) { continue }
-          break
-
-        case PREFIX_MATCH_TOKEN:
-          if (attrVal.lastIndexOf(part.value, 0) === 0) { continue }
-          break
-
-        case SUFFIX_MATCH_TOKEN:
-          if (attrVal.lastIndexOf(part.value)+part.value.length === attrVal.length) {
-            continue
-          }
-          break
-
-        case DASH_MATCH_TOKEN:
-          if (dashMatch(attrVal, part.value)) { continue }
-          break
-
-        case INCLUDE_MATCH_TOKEN:
-          if (fieldMatch(attrVal, part.value)) { continue }
-          break
-
-        case HAS_ATTR_TOKEN:
-          continue // Already know it isn't null, so it has the attr
-
-        case SUBSTRING_MATCH_TOKEN:
-          if (attrVal.indexOf(part.value) !== -1) { continue }
-          break
-
-        default:
-          if (DEBUG_MODE) {
-            throw errInternal // Should have been caught while parsing
-          }
-        } // End attribute selectors
-
-        break
-
-      default:
-        if (DEBUG_MODE) {
-          throw errInternal // Unknown kind
-        }
-      }
-
       if (haltOnFail) {
-        continue SUBGROUP_LOOP // Try the next selector in the subGroup
+        return false
       }
 
-      // A simple selector failed, so go back to the last combinator.
-      j = lastCombinatorIdx
+      j+=1 // So that we retry the same combinator
+
+    } else {
+      combinator = part
+    }
+  }
+
+  return true
+}
+
+
+
+/**
+ * Check if the given element matches the given Sequence
+ *
+ * @param {!Element|Document} root
+ * @param {!Element} el
+ * @param {!Sequence} seq
+ * @return {boolean}
+ */
+function compare_sequence(root, el, seq) {
+  if (seq.hasScope && el !== root) {
+    return false
+  }
+  if (seq.tag && nodeName(el) !== seq.tag) {
+    return false
+  }
+
+  for (var i = 0, sequence = seq.sequence; i < seq.length; i++) {
+    var simple = sequence[i]
+
+    switch (simple.kind) {
+    case CLASS_TOKEN:
+      if (fieldMatch(el.className, simple.value)) { continue }
+      return false
+
+    case ID_TOKEN:
+      if (el.id === simple.value) { continue }
+      return false
+
+
+    // Simple pseudos
+    case PSEUDO_TOKEN:
+      if (simple.subKind(el)) { continue }
+      return false
+
+
+    // Function pseudos
+    case PSEUDO_FUNCTION_TOKEN:
+      switch (simple.subKind) {
+      case NOT_TOKEN:
+        if (!simple.subSelector["matches"](el)) { continue }
+        return false
+
+      case MATCHES_TOKEN:
+        if (simple.subSelector["matches"](el)) { continue }
+        return false
+
+      case NTH_CHILD_TOKEN:
+        if (isNth(el, simple, "", false)) { continue }
+        return false
+
+      case NTH_LAST_CHILD_TOKEN:
+        if (isNth(el, simple, "", true)) { continue }
+        return false
+
+      case NTH_OF_TYPE_TOKEN: // First item in a sequence is always tag
+        if (isNth(el, simple, seq.tag, false)) { continue }
+        return false
+
+      case NTH_LAST_OF_TYPE_TOKEN:
+        if (isNth(el, simple, seq.tag, true)) { continue }
+        return false
+
+      case LANG_TOKEN:
+        var tempEl = el
+        while (tempEl && !tempEl.lang) { tempEl = tempEl.parentNode }
+
+        if (tempEl && dashMatch(tempEl.lang, simple.value)) { continue }
+        return false
+      }
+
+
+    // Attribute selectors
+    case ATTR_TOKEN:
+    case ATTR_INSENSITIVE_TOKEN:
+      var attrVal = getAttr(el, simple.name)
+      if (attrVal == null) {
+        return false
+      }
+
+      if (simple.kind === ATTR_INSENSITIVE_TOKEN) {
+        attrVal = attrVal.toLowerCase()
+      }
+
+      switch (simple.subKind) {
+      case EQUAL_ATTR_TOKEN:
+        if (attrVal === simple.value) { continue }
+        return false
+
+      case PREFIX_MATCH_TOKEN:
+        if (attrVal.lastIndexOf(simple.value, 0) === 0) { continue }
+        return false
+
+      case SUFFIX_MATCH_TOKEN:
+        if (attrVal.lastIndexOf(simple.value)+simple.value.length === attrVal.length) {
+          continue
+        }
+        return false
+
+      case DASH_MATCH_TOKEN:
+        if (dashMatch(attrVal, simple.value)) { continue }
+        return false
+
+      case INCLUDE_MATCH_TOKEN:
+        if (fieldMatch(attrVal, simple.value)) { continue }
+        return false
+
+      case HAS_ATTR_TOKEN:
+        continue // Already know it isn't null, so it has the attr
+
+      case SUBSTRING_MATCH_TOKEN:
+        if (attrVal.indexOf(simple.value) !== -1) { continue }
+        return false
+      }
     }
 
-    return true // Success for all parts
-  } // end SUBGROUP_LOOP
+    if (DEBUG_MODE) {
+      throw errInternal // Everything above should return or continue
+    }
+  }
 
-  return false // No successful selectors in the group
+  return true
 }
 
 
@@ -375,7 +373,7 @@ const pseudoClassFns = {
       if (el === helper) {
         return true
       }
-    } while(helper && (helper = helper.parentNode))
+    } while(helper && (helper = parentElement(helper)))
 
     /*
       Alternate solution would be to force a mouseover event on a temporary handler

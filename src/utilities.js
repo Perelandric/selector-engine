@@ -115,6 +115,19 @@ function getAttr(el, name) {
  * @param {!Element} el
  * @return {Element}
  */
+function parentElement(el) {
+  if (LEGACY) {
+    return (el = el.parentNode) && el.nodeType === 1 ? el : null
+  } else {
+    return el.parentElement
+  }
+}
+
+
+/**
+ * @param {!Element} el
+ * @return {Element}
+ */
 function prevElemSib(el) {
   if (LEGACY) {
     while ((el = el.previousSibling) && el.nodeType !== 1) {

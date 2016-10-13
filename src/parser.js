@@ -45,8 +45,8 @@ function SelectorGroup(strTok) {
 
     const selObject = new Selector(source)
 
-    if (selObject.hasPseudoElem) {
-      continue // Selectors with a pseudo-element are ignored.
+    if (selObject.autoFail) {
+      continue // Selectors that will always fail are ignored.
     }
 
     hasUniversal = hasUniversal || selObject.qualifier === "*"
@@ -238,7 +238,6 @@ function Selector(source) {
   var doCombinator = false
   ,   n
 
-  this.source = source
   this.parts = []
   this.qualifier = "" // Will hold the right-most tagName to be fetched.
 
@@ -265,16 +264,16 @@ function Selector(source) {
       }
 
       switch (n) {
-      case COMBINATOR_CHILD_REUSE:
-      case COMBINATOR_ADJACENT_REUSE:
-      case COMBINATOR_GENERAL_REUSE:
+      case COMBINATOR_CHILD:
+      case COMBINATOR_ADJACENT:
+      case COMBINATOR_GENERAL:
         this.parts.push(n)
         break
 
       default:
         if (isSpace) {
           source.reconsume() // reconsume the one after the space
-          this.parts.push(COMBINATOR_DESCENDANT_REUSE)
+          this.parts.push(COMBINATOR_DESCENDANT)
 
         } else {
           throw errInvalidSelector
@@ -285,22 +284,18 @@ function Selector(source) {
 
     } else {
       source.reconsume()
-      this.makeSimpleSequence() // will raise if none found
+      this.parts.push(new Sequence(source, this)) // will raise if none found
       doCombinator = true
     }
   }
 
-  if (doCombinator === false) { // Ended after a combinator
+  if (!doCombinator) { // Ended after a combinator
     throw errInvalidSelector
   }
 
-  if (this.hasPseudoElem) {
-    this.parts = null // pseudo-elements never match, so drop all the data
-  } else {
-    this.parts.push(COMBINATOR_NONE_REUSE)
+  if (this.autoFail) {
+    this.parts = null // Was deemed that it'll never match, so drop all the data
   }
-
-  this.source = null
 
   // We only cache the selector if the endIdx did make a full selector.
   if (endIdx === source.i) {
@@ -308,23 +303,37 @@ function Selector(source) {
   }
 }
 
-Selector.prototype.hasPseudoElem = false
+Selector.prototype.qualifier = "*"
+Sequence.prototype.autoFail = false
+Sequence.prototype.hasScope = false
+Sequence.prototype.hasPseudoElem = false
 
 
-const temp_sequence = []
+
+/* TODO:
+  THIS DOESN'T WORK because each sequence needs a separate reference to its TAG.
+  Should I have an actual Sequence object? It would make things better organized.
+  Maybe room for extra caching too.
+*/
+
 
 
 /**
  * Parses the stream of tokens into a valid sequence of simple selectors to be
  * added to the current Selector.
+ *
+ * @constructor
+ * @private
+ * @param {!Lexer} source input source for this selector
+ * @param {!Selector} selector
  */
-Selector.prototype.makeSimpleSequence = function() {
-  temp_sequence.length = 0 // Just to be certain
+function Sequence(source, selector) {
+  this.sequence = []
 
-  // The previous qualifier was not the last sequence, so erase it
-  this.qualifier = ""
+  // The previous qualifier (if any) was not the last sequence, so erase it.
+  delete selector.qualifier
 
-  var n = this.source.nextAfterSpace()
+  var n = source.nextAfterSpace()
 
   if (!n || n.kind === ',') {
     throw errInvalidSelector
@@ -332,66 +341,66 @@ Selector.prototype.makeSimpleSequence = function() {
 
   switch (n.kind) {
   case TAG_TOKEN:
-    n.value = n.value.toUpperCase()
-    /*falls through*/
+    selector.qualifier = this.tag = n.value.toUpperCase()
 
   case UNIVERSAL_TAG_TOKEN:
-    this.qualifier = n.value || "*"
-    temp_sequence.push(n)
     break
 
   default:
-    this.source.reconsume()
-    this.qualifier = "*"
-    temp_sequence.push(UNIVERSAL_TAG_REUSE)
+    source.reconsume()
   }
 
   OUTER:
-  while ((n = this.source.next())) {
+  while ((n = source.next())) {
     switch (n.kind) {
-    case ',': case WHITESPACE_TOKEN: case COMBINATOR:
+    case ',': case WHITESPACE_TOKEN: case COMBINATOR_CHILD:
+    case COMBINATOR_ADJACENT: case COMBINATOR_GENERAL:
       // Comma is needed by the GroupSelector, and Combinators (including
       //  whitespace) is needed by the main loop, so reconsume
-      this.source.reconsume()
+      source.reconsume()
       break OUTER
     }
 
-    if (this.hasPseudoElem) {
+    if (selector.hasPseudoElem) {
       throw errInvalidSelector
     }
 
     switch (n.kind) {
     case PSEUDO_TOKEN:
-      switch (n.subKind) { // Make sure :scope is always handled first
+
+      switch (n.subKind) {
       case SCOPE:
-        temp_sequence.unshift(n)
+        if (selector.hasScope) { // `:scope` in 2 different Sequences fails
+          selector.autoFail = true
+        }
+        this.hasScope = true
         continue
 
       case PSEUDO_ELEMENT:
-        this.hasPseudoElem = true
+        selector.hasPseudoElem = true
+        selector.autoFail = true
         continue
       }
       /*fallthrough*/
 
     case ID_TOKEN: case ATTR_TOKEN: case ATTR_INSENSITIVE_TOKEN:
     case CLASS_TOKEN: case PSEUDO_FUNCTION_TOKEN:
-      temp_sequence.push(n)
+      this.sequence.push(n)
       break
-
 
     default:
       throw errInvalidSelector
     }
   }
 
-  // Add each part of the sequence to the full result in reverse. This is so
-  // that when we traverse a full selector, we can use a right-to-left loop
-  // WRT the order of sequences and combinators, but when within a sequence,
-  // it will still be as though we were going left to right.
-  while (temp_sequence.length) {
-    this.parts.push(temp_sequence.pop())
+  if (this.hasScope) { // Needs to be set down here, to allow `:scope:scope`
+    selector.hasScope = true
   }
 }
+
+Sequence.prototype.tag = ""
+Sequence.prototype.hasScope = false
+
 
 
 /*

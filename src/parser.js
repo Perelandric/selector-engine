@@ -365,29 +365,23 @@ function Sequence(source, selector) {
     if (n === PSEUDO_ELEMENT) {
       selector.hasPseudoElem = true
       selector.autoFail = true
-      continue
-    }
 
-    switch (n.kind) {
-    case PSEUDO_TOKEN:
-      switch (n.subKind) {
-      case SCOPE:
-        if (selector.hasScope) { // `:scope` in 2 different Sequences fails
-          selector.autoFail = true
-        }
-        this.hasScope = true
-        continue
+    } else if (n === SCOPE) {
+      if (selector.hasScope) { // `:scope` in 2 different Sequences fails
+        selector.autoFail = true
       }
+      this.hasScope = true
 
-      /*fallthrough*/
+    } else {
+      switch (n.kind) {
+      case PSEUDO_TOKEN: case ID_TOKEN: case ATTR_TOKEN:
+      case ATTR_INSENSITIVE_TOKEN: case CLASS_TOKEN: case PSEUDO_FUNCTION_TOKEN:
+        this.sequence.push(n)
+        break
 
-    case ID_TOKEN: case ATTR_TOKEN: case ATTR_INSENSITIVE_TOKEN:
-    case CLASS_TOKEN: case PSEUDO_FUNCTION_TOKEN:
-      this.sequence.push(n)
-      break
-
-    default:
-      throw errInvalidSelector
+      default:
+        throw errInvalidSelector
+      }
     }
   }
 

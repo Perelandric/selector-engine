@@ -212,11 +212,14 @@ Lexer.prototype.next = function() {
 
     } else {
       this.curr = new Token(PSEUDO_TOKEN, name)
-      this.curr.subKind = name === "scope" ? SCOPE : pseudoClassFns[name]
+      this.curr.subKind = pseudoClassFns[name]
     }
 
     if (!this.curr || !this.curr.subKind) {
       switch (name) {
+      case "scope":
+        this.curr = SCOPE
+        break
       case "first-line":
       case "first-letter":
       case "before":

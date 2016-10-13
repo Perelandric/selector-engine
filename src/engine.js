@@ -80,13 +80,9 @@ function _matches(root, origEl, subGroup) {
         continue // Always matches
 
       case TAG_TOKEN:
-        temp = nodeName(el)
         thisSeqQualName = part.value
-
-        if (needTagFix && getChar(temp, 0) === '/') {
-          temp = temp.slice(1)
-        }
-        if (temp === thisSeqQualName) { continue }
+        
+        if (nodeName(el) === thisSeqQualName) { continue }
         break
 
       case CLASS_TOKEN:

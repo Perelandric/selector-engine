@@ -40,7 +40,18 @@ function getSpaceAt(s, i) {
  * @return {string}
  */
 function nodeName(el) {
-  return LEGACY ? el.nodeName.toUpperCase() : el.nodeName
+  if (LEGACY) {
+    var n = el.nodeName.toUpperCase()
+
+    if (needTagFix && getChar(n, 0) === '/') {
+      return n.slice(1)
+    } else {
+      return n
+    }
+
+  } else {
+    return el.nodeName
+  }
 }
 
 /**

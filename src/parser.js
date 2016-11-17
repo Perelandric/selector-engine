@@ -187,8 +187,12 @@ SelectorGroup.prototype.selectFrom = function(root) {
  */
 SelectorGroup.prototype.potentialsLoop = function(root, i, cb) {
   const subGroup = this.subGroups[i]
-  ,   potentials =
+
+  ,   potentials = // TODO: This ---v---should only be for known invalid qualifiers, right?
         root.getElementsByTagName(needTagFix ? "*" : subGroup[0].qualifier)
+        // TODO: Also, if there is a known invalid qualifier, that should actually be putting
+        // the selector into "universal" mode when being parsed, so this check wouldn't be
+        // needed anyway.
 
   // Check each potential element to see if they match a selector
   for (var j = 0; j < potentials.length; j+=1) {

@@ -1,3 +1,15 @@
+// TODO: Perhaps a better and simpler optimization than the selector subgroups
+// be for multiple selectors that all have a distinct qualified name to do a separate
+// pass that looks at all elements in the DOM and creates a document-order subset.
+// Then run the selectors on that subset.
+// That would completely eliminate any of the code for checking duplicates and sorting,
+// as well as all the subgroup code, which can be a little confusing.
+// As now, if any of the selectors have `*`, then that's the selection. Otherwise,
+// when there's more than one selector, we create an object or array of all the
+// *unique* qualified names, and do a single pass over the DOM, collecting elements
+// with any of those names.
+// This analysis would be part of the SelectorGroup creation, so it would only be
+// done once.
 
 const needTagFix = function() {
   if (LEGACY) {
@@ -356,7 +368,14 @@ const pseudoClassFns = {
     return el.id && window.location.hash.slice(1) === el.id
   },
   "any-link": function(el) {
-    return nodeName(el) === "A" && hasAttr(el, "href")
+    // TODO: Maybe in the parser, rewrite this so that if there's already a
+    // qualified name give, it fails immediately, and if not, it gets written to
+    // 3 separate selectors, with `A`, `AREA` and `LINK` as the qualified names
+    // and `[href]`. That is better than using a recursive call into the selector
+    // engine here.
+    // Maybe with other ones that make a recursive call into the engine too.
+    const nn = nodeName(el)
+    return (nn === "A" || nn === "AREA" || nn === "LINK") && hasAttr(el, "href")
   },
   "hover": function(el) {
     // We only add the mouseover handler if absolutely necessary.

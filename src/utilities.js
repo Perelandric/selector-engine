@@ -3,7 +3,7 @@
 /**
  * @param {!string} s
  * @param {!number} i
- * @return {string}
+ * @return {string|undefined}
  */
 function getChar(s, i) {
   return LEGACY ? s.charAt(i) : s[i]
@@ -22,12 +22,12 @@ function getSpaceAt(s, i) {
   var res = 0
 
   for (;;) {
-    switch(getChar(s, i+res)) {
+    switch((getChar(s, i+res) || "")) {
     case ' ': case '\t': case '\n':
       res += 1
       continue
 
-    case "": case undefined:
+    case "":
       return res || -1
     }
     return res

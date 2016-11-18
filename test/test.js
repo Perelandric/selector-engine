@@ -15,7 +15,7 @@ jsdom.env(
     var sel = "div#foo.foo.bar:first-of-type:last-of-type:only-of-type" +
                  ":first-child:last-child:only-child[data-t][data-t*='-']" +
                  "[data-t^=\"FOO\" i][data-t$='bar'][data-t|=foo][data-t=foo-bar]" +
-                 "[data-t~=foo-bar]:not(p, dl > dd):nth-child(1):matches(div, #foo)"
+                 "[data-t~=foo-bar]:not(p, dd):nth-child(1):matches(div, #foo)"
 
     Query.log = console.log
 

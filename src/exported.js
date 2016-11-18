@@ -32,7 +32,7 @@ Query["all"] = function(elem, selector) {
   return new SelectorGroup(selector).selectFrom(elem)
 }
 Query["matches"] = function(elem, selector) {
-  return new SelectorGroup(selector).matches(elem)
+  return new SelectorGroup(selector).matches(elem, elem)
 }
 
 

@@ -1,11 +1,7 @@
 
 
-
-
 /**
- * Represents a group of selectors. If there is more than one selector in the
- * group, they will be consolidated into sub-groups based on the `qualifier`
- * of the selector, if possible.
+ * Represents a group of selectors.
  *
  * @private
  * @constructor
@@ -20,8 +16,10 @@ function SelectorGroup(strTok) {
 
   const source = isLexer ? strTok : new Lexer(strTok)
 
+  // The selector engine always does a single DOM selection, so if there's more
+  // than one distinct qualified name, it does a 'universal' selection.
+  this.globalQualifier = ""
   this.selectors = []
-  this.qualifiedNames = []
 
   var first = true
   ,   n
@@ -49,18 +47,19 @@ function SelectorGroup(strTok) {
       continue // Selectors that will always fail are ignored.
     }
 
-    this.selectors.push(selObject)
+    if (!this.globalQualifier) {
+      this.globalQualifier = selObject.tag
 
-    if (this.qualifiedNames) {
-      const q = selObject.qualifier
-
-      if (q === "*") {
-        this.qualifiedNames = null
-
-      } else if (!contains(this.qualifiedNames, q)) {
-        this.qualifiedNames.push(q)
-      }
+    } else if (this.globalQualifier !== selObject.tag) {
+      this.globalQualifier = "*"
     }
+
+    if (!this.globalQualifier) {
+      this.globalQualifier = "*"
+    }
+    this.checkName = this.globalQualifier === "*"
+
+    this.selectors.push(selObject)
   }
 
   // Cache the selector if it wasn't a Lexer.
@@ -71,63 +70,45 @@ function SelectorGroup(strTok) {
 
 
 /**
- * Get the potential elements based on the qualified name(s).
- *
- * @param {!Element|!Document} root
- * @return {Array<!Element>}
- */
-SelectorGroup.prototype.getPotentials = function(root) {
-  const qn = this.qualifiedNames
-
-  if (qn && qn.length === 1) {
-    return root.getElementsByTagName(qn[0])
-  }
-
-  const p = root.getElementsByTagName("*")
-  ,     plen = p.length
-
-  if (!qn || !plen) {
-    return p
-  }
-
-  const pa = []
-
-  for (var i = 0; i < plen; i+=1) {
-    if ((!needCommentFilter || p[i].nodeType === 1) && contains(qn, nodeName(p[i]))) {
-      pa.push(p[i])
-    }
-  }
-
-  return pa
-}
-
-/**
- * Attempts to match the given element against any of the subGroups in this
+ * Attempts to match the given element against any of the selectors in this
  * SelectorGroup.
  *
+ * @param {!Element|!Document} root
  * @param {!Element} el
  * @return {boolean}
  */
-SelectorGroup.prototype.matches = function(el) {
-  return _matches(el, el, this.selectors)
+SelectorGroup.prototype.matches = function(root, el) {
+  for (var i = 0, len = this.selectors.length; i < len; i+=1) {
+    var sel = this.selectors[i]
+    ,   q = sel.parts[sel.parts.length-1].tag
+
+    // Check the qualifer early to avoid the `compare_selector()` when possible.
+    if ((!this.checkName || !q || q === nodeName(el)) && compare_selector(root, el, sel)) {
+      return true
+    }
+  }
+
+  return false
 }
 
 
 /**
- * Fetches the first element that matches any of the subGroups in this
+ * Fetches the first element that matches any of the selectors in this
  * SelectorGroup from the context of the `root` argument.
  *
- * @param {!Element} root
+ * @param {!Element|!Document} root
  * @return {Element}
  */
 SelectorGroup.prototype.selectFirstFrom = function(root) {
-  // TODO: This would be better to run the selectors as the filter is taking place.
-
-  const p = this.getPotentials(root)
+  const p = root.getElementsByTagName(this.globalQualifier)
 
   for (var i = 0, len = p.length; i < len; i+=1) {
+    if (needCommentFilter && p[i].nodeType !== 1) {
+      continue
+    }
+
     // If not an element, or an element but not a match, try the next elem
-    if (_matches(root, p[i], this.selectors)) {
+    if (this.matches(root, p[i])) {
       return p[i]
     }
   }
@@ -137,24 +118,28 @@ SelectorGroup.prototype.selectFirstFrom = function(root) {
 
 
 /**
- * Fetches all elements that match any of the subGroups in this SelectorGroup
+ * Fetches all elements that match any of the selectors in this SelectorGroup
  * from the context of the `root` argument.
  *
  * The result is guaranteed to be unique and in document order.
  *
- * @param {!Element} root
+ * @param {!Element|!Document} root
  * @return {Array<!Element>}
  */
 SelectorGroup.prototype.selectFrom = function(root) {
-  const p = this.getPotentials(root)
+  const p = root.getElementsByTagName(this.globalQualifier)
   const resArr = []
 
   // TODO: Ultimately want to optimize for `gEBI`, `gEBCN`, `gEBTN`, `:root`
   // when the selector consists entirely of one of those.
 
-  for (var i = 0; i < p.length; i+=1) {
+  for (var i = 0, len = p.length; i < len; i+=1) {
+    if (needCommentFilter && p[i].nodeType !== 1) {
+      continue
+    }
+
     // If not an element, or an element but not a match, try the next elem
-    if (_matches(root, p[i], this.selectors)) {
+    if (this.matches(root, p[i])) {
       resArr.push(p[i])
     }
   }
@@ -197,7 +182,6 @@ function Selector(source) {
   ,   n
 
   this.parts = []
-  this.qualifier = "" // Will hold the right-most tagName to be fetched.
 
   while ((n = source.next())) {
     // Track if whitespace was found in case it's a descendant combinator.
@@ -261,19 +245,10 @@ function Selector(source) {
   }
 }
 
-Selector.prototype.qualifier = "*"
-Sequence.prototype.autoFail = false
-Sequence.prototype.hasScope = false
-Sequence.prototype.hasPseudoElem = false
-
-
-
-/* TODO:
-  THIS DOESN'T WORK because each sequence needs a separate reference to its TAG.
-  Should I have an actual Sequence object? It would make things better organized.
-  Maybe room for extra caching too.
-*/
-
+// Will hold the right-most tagName to be fetched.
+Selector.prototype.autoFail = false
+Selector.prototype.hasScope = false
+Selector.prototype.hasPseudoElem = false
 
 
 /**
@@ -288,9 +263,6 @@ Sequence.prototype.hasPseudoElem = false
 function Sequence(source, selector) {
   this.sequence = []
 
-  // The previous qualifier (if any) was not the last sequence, so erase it.
-  delete selector.qualifier
-
   var n = source.nextAfterSpace()
 
   if (!n || n === COMMA_TOKEN) {
@@ -299,7 +271,7 @@ function Sequence(source, selector) {
 
   if (n !== UNIVERSAL_TAG_TOKEN) {
     if (n.kind === TAG_TOKEN) {
-      selector.qualifier = this.tag = n.value.toUpperCase()
+      this.tag = n.value.toUpperCase()
     } else {
       source.reconsume()
     }

@@ -28,26 +28,6 @@ const needCommentFilter = LEGACY ?
 
 
 /**
- * General function to check if the given element matches any of the selectors
- * in the given group.
- *
- * @param {!Element|Document} root
- * @param {!Element} el
- * @param {!Array<!Selector>} selectors
- * @return {boolean}
- */
-function _matches(root, el, selectors) {
-  for (var i = 0; i < selectors.length; i+=1) {
-    if (compare_selector(root, el, selectors[i])) {
-      return true
-    }
-  }
-
-  return false
-}
-
-
-/**
  * Check if the given element matches the given Selector.
  *
  * @param {!Element|Document} root

@@ -295,7 +295,7 @@ Lexer.prototype.getPseudoFunction = function(name) {
     return new Token(
       PSEUDO_FUNCTION_TOKEN,
       // New Lexer with the same source that halts on `)`
-      new SelectorGroup(new Lexer(this, ')', true, false)),
+      new SelectorGroup(new Lexer(this, ')', true, true)),
       NOT_TOKEN
     )
 
@@ -310,9 +310,11 @@ Lexer.prototype.getPseudoFunction = function(name) {
 
   case "lang":
     // New Lexer with the same source that halts on `)`
-    var n = new Lexer(this, ')', true, true).nextAfterSpace()
+    const lex = new Lexer(this, ')')
+    ,     n = lex.nextAfterSpace()
 
-    if (n.kind === TAG_TOKEN) { // Comes through as a TAG, so relabel
+    if (n.kind === TAG_TOKEN && !lex.nextAfterSpace()) {
+      // Comes through as a TAG, so relabel
       n.kind = PSEUDO_FUNCTION_TOKEN
       n.subKind = LANG_TOKEN
       return n

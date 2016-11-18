@@ -63,6 +63,10 @@ set_debug:
 	$(eval debug_mode := DEBUG_MODE=true)
 
 
+set_basic:
+	$(eval comp_level := WHITESPACE_ONLY)
+
+
 set_advanced:
 	$(eval comp_level := ADVANCED)
 	$(eval formatting := )
@@ -72,7 +76,7 @@ set_legacy:
 	$(eval legacy_mode := LEGACY=true)
 
 
-$(full):
+$(full): set_basic
 	@mkdir -p $(dir $@)
 	@echo -n Creating $@...
 	$(closure_params)

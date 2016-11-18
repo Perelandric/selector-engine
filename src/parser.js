@@ -18,12 +18,12 @@ function SelectorGroup(strTok) {
     return cache[strTok]
   }
 
-  // Selectors with matching qualifiers are put together into a subgroup.
-  const subGroups = {}
-  ,   source = isLexer ? strTok : new Lexer(strTok)
+  const source = isLexer ? strTok : new Lexer(strTok)
+
+  this.selectors = []
+  this.qualifiedNames = []
 
   var first = true
-  ,   hasUniversal = false
   ,   n
 
   // Continue to compile if any remain, and check `el` at the same time
@@ -49,42 +49,17 @@ function SelectorGroup(strTok) {
       continue // Selectors that will always fail are ignored.
     }
 
-    hasUniversal = hasUniversal || selObject.qualifier === "*"
+    this.selectors.push(selObject)
 
-    if (!subGroups.hasOwnProperty(selObject.qualifier)) {
-      subGroups[selObject.qualifier] = []
-    }
-    subGroups[selObject.qualifier].push(selObject)
-  }
+    if (this.qualifiedNames) {
+      const q = selObject.qualifier
 
-  // Convert the subGroups object into an Array of subGroup Arrays. If there's
-  // at least one "universal" selector, all selectors are grouped into a single
-  // subGroup.
-  this.subGroups = []
+      if (q === "*") {
+        this.qualifiedNames = null
 
-  for (var key in subGroups) {
-    var sg = subGroups[key]
-
-    // Could be empty because of pseudoElem---v
-    if (!subGroups.hasOwnProperty(key) || !sg.length) { continue }
-
-    // If at least one had a universal selector, put them all in one subgroup.
-    if (hasUniversal) {
-
-      // The qualifier for all selectors in a subgroup should match, so make
-      // them all the universal qualifier.
-      for (var i = 0; i < sg.length; i+=1) {
-        sg[i].qualifier = "*"
+      } else if (!contains(this.qualifiedNames, q)) {
+        this.qualifiedNames.push(q)
       }
-
-      if (this.subGroups[0]) {
-        this.subGroups[0].push.apply(this.subGroups[0], sg)
-      } else {
-        this.subGroups[0] = sg
-      }
-
-    } else {
-      this.subGroups.push(sg)
     }
   }
 
@@ -96,6 +71,37 @@ function SelectorGroup(strTok) {
 
 
 /**
+ * Get the potential elements based on the qualified name(s).
+ *
+ * @param {!Element|!Document} root
+ * @return {Array<!Element>}
+ */
+SelectorGroup.prototype.getPotentials = function(root) {
+  const qn = this.qualifiedNames
+
+  if (qn && qn.length === 1) {
+    return root.getElementsByTagName(qn[0])
+  }
+
+  const p = root.getElementsByTagName("*")
+  ,     plen = p.length
+
+  if (!qn || !plen) {
+    return p
+  }
+
+  const pa = []
+
+  for (var i = 0; i < plen; i+=1) {
+    if ((!needCommentFilter || p[i].nodeType === 1) && contains(qn, nodeName(p[i]))) {
+      pa.push(p[i])
+    }
+  }
+
+  return pa
+}
+
+/**
  * Attempts to match the given element against any of the subGroups in this
  * SelectorGroup.
  *
@@ -103,14 +109,9 @@ function SelectorGroup(strTok) {
  * @return {boolean}
  */
 SelectorGroup.prototype.matches = function(el) {
-  for(var i = 0; i < this.subGroups.length; i+=1) {
-    if (_matches(el, el, this.subGroups[i])) {
-      return true
-    }
-  }
-
-  return false
+  return _matches(el, el, this.selectors)
 }
+
 
 /**
  * Fetches the first element that matches any of the subGroups in this
@@ -120,19 +121,19 @@ SelectorGroup.prototype.matches = function(el) {
  * @return {Element}
  */
 SelectorGroup.prototype.selectFirstFrom = function(root) {
-  var res = null
+  // TODO: This would be better to run the selectors as the filter is taking place.
 
-  for (var i = 0; i < this.subGroups.length; i+=1) {
-    this.potentialsLoop(root, i, function(el) {
-      // Keep the one that appears first on the DOM
-      res = res && sorter(res, el) < 0 ? res : el
-      return true // break the potentialsLoop
-    })
+  const p = this.getPotentials(root)
+
+  for (var i = 0, len = p.length; i < len; i+=1) {
+    // If not an element, or an element but not a match, try the next elem
+    if (_matches(root, p[i], this.selectors)) {
+      return p[i]
+    }
   }
 
-  return res
+  return null
 }
-
 
 
 /**
@@ -145,67 +146,20 @@ SelectorGroup.prototype.selectFirstFrom = function(root) {
  * @return {Array<!Element>}
  */
 SelectorGroup.prototype.selectFrom = function(root) {
+  const p = this.getPotentials(root)
   const resArr = []
-
-  // Track if elements are located in more than one selector subGroup
-  var matchedSubGroups = 0
-
-  // When checking if unique, we only need to search until the end of the
-  // results of the previous subgroup's results.
-  ,   prevLen = 0
-
 
   // TODO: Ultimately want to optimize for `gEBI`, `gEBCN`, `gEBTN`, `:root`
   // when the selector consists entirely of one of those.
-  for (var i = 0; i < this.subGroups.length; i+=1) {
-    this.potentialsLoop(root, i, function(el) {
-      for (var k = 0; k < prevLen; k+=1) {
-        if (resArr[k] === el) {
-          return
-        }
-      }
 
-      resArr.push(el)
-    })
-
-    // Current subGroup must have added at least one unique element
-    if (resArr.length !== prevLen) {
-      matchedSubGroups+=1
-      prevLen = resArr.length
-    }
-  }
-
-  // Don't bother sorting if all elems came from a single subGroup.
-  return matchedSubGroups > 1 ? resArr.sort(sorter) : resArr
-}
-
-
-/**
- * @param {!Element} root
- * @param {!Number} i
- * @param {func(!Element)} cb
- */
-SelectorGroup.prototype.potentialsLoop = function(root, i, cb) {
-  const subGroup = this.subGroups[i]
-
-  ,   potentials = // TODO: This ---v---should only be for known invalid qualifiers, right?
-        root.getElementsByTagName(needTagFix ? "*" : subGroup[0].qualifier)
-        // TODO: Also, if there is a known invalid qualifier, that should actually be putting
-        // the selector into "universal" mode when being parsed, so this check wouldn't be
-        // needed anyway.
-
-  // Check each potential element to see if they match a selector
-  for (var j = 0; j < potentials.length; j+=1) {
-    var el = potentials[j]
-
+  for (var i = 0; i < p.length; i+=1) {
     // If not an element, or an element but not a match, try the next elem
-    if ((!needCommentFilter || el.nodeType === 1) && _matches(root, el, subGroup)) {
-      if (cb(el)) {
-        // selectFirstFrom only needs the first match from each subgroup.
-        break
-      }
+    if (_matches(root, p[i], this.selectors)) {
+      resArr.push(p[i])
     }
   }
+
+  return resArr
 }
 
 
@@ -404,6 +358,7 @@ Sequence.prototype.hasScope = false
 in the DOM by checking to see if it's a match, a next sibling or a descendant
 of either.
 */
+/*
 function onOrAfter(a, b) {
   if (a === b || (firstElemChild(a) && onOrAfter(firstElemChild(a), b))) {
     return true
@@ -427,3 +382,4 @@ function sorter(a, b) {
           // IE 6 supports `.contains()`, so start on the next sibling
           onOrAfter(nextElemSib(a), b) ? -1 : 1)
 }
+*/

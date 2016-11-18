@@ -35,12 +35,28 @@ function getSpaceAt(s, i) {
 }
 
 
+/**
+ * @param {!Array<T>} coll
+ * @param {!T} target
+ * @return {boolean}
+ */
+function contains(coll, target) {
+  for (var i = 0, len = coll.length; i < len; i+=1) {
+    if (coll[i] === target) {
+      return true
+    }
+  }
+  return false
+}
+
+
  /**
  * @param {!Element} el
  * @return {string}
  */
 function nodeName(el) {
   if (LEGACY) {
+    /*
     var n = el.nodeName.toUpperCase()
 
     if (needTagFix && getChar(n, 0) === '/') {
@@ -48,6 +64,8 @@ function nodeName(el) {
     } else {
       return n
     }
+    */
+    return el.nodeName.toUpperCase()
 
   } else {
     return el.nodeName

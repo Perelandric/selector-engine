@@ -1,16 +1,5 @@
-// TODO: Perhaps a better and simpler optimization than the selector subgroups
-// be for multiple selectors that all have a distinct qualified name to do a separate
-// pass that looks at all elements in the DOM and creates a document-order subset.
-// Then run the selectors on that subset.
-// That would completely eliminate any of the code for checking duplicates and sorting,
-// as well as all the subgroup code, which can be a little confusing.
-// As now, if any of the selectors have `*`, then that's the selection. Otherwise,
-// when there's more than one selector, we create an object or array of all the
-// *unique* qualified names, and do a single pass over the DOM, collecting elements
-// with any of those names.
-// This analysis would be part of the SelectorGroup creation, so it would only be
-// done once.
 
+/*
 const needTagFix = function() {
   if (LEGACY) {
     const testElem = document.createElement("div")
@@ -25,6 +14,7 @@ const needTagFix = function() {
     return false
   }
 }()
+*/
 
 
 const needCommentFilter = LEGACY ?
@@ -39,16 +29,16 @@ const needCommentFilter = LEGACY ?
 
 /**
  * General function to check if the given element matches any of the selectors
- * in the given subGroup.
+ * in the given group.
  *
  * @param {!Element|Document} root
  * @param {!Element} el
- * @param {!Array<!Selector>} subGroup
+ * @param {!Array<!Selector>} selectors
  * @return {boolean}
  */
-function _matches(root, el, subGroup) {
-  for (var i = 0; i < subGroup.length; i+=1) {
-    if (compare_selector(root, el, subGroup[i])) {
+function _matches(root, el, selectors) {
+  for (var i = 0; i < selectors.length; i+=1) {
+    if (compare_selector(root, el, selectors[i])) {
       return true
     }
   }
@@ -308,6 +298,7 @@ const formControls = {
 const hiddenOrButton = {
   "hidden":1, "image": 1, "button": 1, "submit": 1, "reset": 1
 }
+const linkNodes = ["A", "AREA", "LINK"]
 
 
 
@@ -374,8 +365,7 @@ const pseudoClassFns = {
     // and `[href]`. That is better than using a recursive call into the selector
     // engine here.
     // Maybe with other ones that make a recursive call into the engine too.
-    const nn = nodeName(el)
-    return (nn === "A" || nn === "AREA" || nn === "LINK") && hasAttr(el, "href")
+    return hasAttr(el, "href") && contains(linkNodes, nodeName(el))
   },
   "hover": function(el) {
     // We only add the mouseover handler if absolutely necessary.

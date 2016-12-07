@@ -255,7 +255,7 @@ Lexer.prototype.next = function() {
 
   // ID, CLASS, TAG or Whitespace
   default:
-    var t = getSpaceAt(this.sel, this.i)
+    var t = countSpacesAt(this.sel, this.i)
 
     if (t > 0) {
       this.i += t-1

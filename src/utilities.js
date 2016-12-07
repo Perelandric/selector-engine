@@ -18,7 +18,7 @@ function getChar(s, i) {
  * @param {!number} i
  * @return {number}
  */
-function getSpaceAt(s, i) {
+function countSpacesAt(s, i) {
   var res = 0
 
   for (;;) {

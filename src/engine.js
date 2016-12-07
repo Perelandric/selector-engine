@@ -224,15 +224,15 @@ function fieldMatch(target, pattern) {
   var idx = 0
 
   while ((idx = target.indexOf(pattern, idx)) !== -1) {
-    // Both before and after there's either a space or no character
-    if (getSpaceAt(target, idx-1) && getSpaceAt(target, idx+pattern.length)) {
+    if (!countSpacesAt(target, idx+pattern.length)) { // Fail, non-space after
+      idx += pattern.length + 2
+
+    } else if (!countSpacesAt(target, idx-1)) { // Fail, non-space before
+      idx += pattern.length + 1
+
+    } else {
       return true
     }
-
-    // We move one more character extra past the end of the match, since the
-    // last character in `pattern` is definitely not a space, so it would
-    // not work as the boundary of an adjacent field match.
-    idx += pattern.length + 1
   }
 
   return false

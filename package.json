@@ -7,7 +7,7 @@
     "quick-test": "0.2.4"
   },
   "main": "lib/selector-engine.min.js",
-  "files": [],
+  "files": ["lib"],
   "directories": {},
   "scripts": {},
   "repository": {

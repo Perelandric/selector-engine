@@ -1,13 +1,15 @@
 {
   "name": "selector-engine",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Standards-based selector engine with patches for querySelector[All]() and matches().",
   "config": {},
   "devDependencies": {
     "quick-test": "0.2.4"
   },
   "main": "lib/selector-engine.min.js",
-  "files": ["lib"],
+  "files": [
+    "lib"
+  ],
   "directories": {},
   "scripts": {},
   "repository": {

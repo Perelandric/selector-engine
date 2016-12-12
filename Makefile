@@ -26,25 +26,28 @@ gzipped_legacy	:= $(compiled_legacy).gz
 # compiler settings
 debug_mode	:= DEBUG_MODE=false
 legacy_mode	:= LEGACY=false
-comp_level	:= WHITESPACE_ONLY
-formatting	:= --formatting PRETTY_PRINT
+out_wrap_license := "/* selector-engine | (c) 2016 Perelandric | MIT License */"
+out_wrap_open := ";(function(global) {"
+out_wrap_middle := "%output%"
+out_wrap_close := "})(this);"
+full_wrapper := $(out_wrap_license)$(out_wrap_open)$(out_wrap_middle)$(out_wrap_close)
 
+all_files := $(exported_js) $(lexer_js) $(parser_js) $(engine_js) $(utilities_js)
 
 # Variables expanded at point of use
 # ==================================
 
 # closure compiler
 closure_params = @java -jar '$(CLOSURE)' \
-  --js $(exported_js) $(lexer_js) $(parser_js) $(engine_js) $(utilities_js) \
-  --output_wrapper_file $(wrapper_js) \
+  --js $(all_files) \
+  --output_wrapper $(full_wrapper) \
 	--js_output_file $@ \
-	--compilation_level $(comp_level) \
+	--compilation_level ADVANCED \
 	--assume_function_wrapper \
 	--define $(debug_mode) \
 	--define $(legacy_mode) \
   --language_in ECMASCRIPT6 \
-  --language_out ECMASCRIPT3 \
-	$(formatting); \
+  --language_out ECMASCRIPT3; \
 	echo done;
 
 
@@ -63,23 +66,18 @@ set_debug:
 	$(eval debug_mode := DEBUG_MODE=true)
 
 
-set_basic:
-	$(eval comp_level := WHITESPACE_ONLY)
-
-
-set_advanced:
-	$(eval comp_level := ADVANCED)
-	$(eval formatting := )
-
-
 set_legacy:
 	$(eval legacy_mode := LEGACY=true)
 
 
-$(full): set_basic
+$(full):
 	@mkdir -p $(dir $@)
 	@echo -n Creating $@...
-	$(closure_params)
+	@echo $(out_wrap_license) > $@
+	@echo $(out_wrap_open) >> $@
+	@cat $(all_files) >> $@
+	@echo -n $(out_wrap_close) >> $@
+	@echo done
 
 
 $(compiled_legacy): $(full) set_legacy
@@ -87,7 +85,7 @@ $(compiled_legacy): $(full) set_legacy
 	$(closure_params)
 
 
-$(compiled): $(full) set_advanced
+$(compiled): $(full)
 	@echo -n Compiling $@...
 	$(closure_params)
 

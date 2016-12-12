@@ -34,6 +34,7 @@ full_wrapper := $(out_wrap_license)$(out_wrap_open)$(out_wrap_middle)$(out_wrap_
 
 all_files := $(exported_js) $(lexer_js) $(parser_js) $(engine_js) $(utilities_js)
 
+
 # Variables expanded at point of use
 # ==================================
 
@@ -53,24 +54,22 @@ closure_params = @java -jar '$(CLOSURE)' \
 
 # Rules
 
-.PHONY: all test clean
+.PHONY: all force test clean
 
 
 all: $(compiled) $(compiled_legacy) sizes test
 
 
-debug: set_debug build
+# Force a full make to take place by first removing generated files
+force: clean all
 
 
-set_debug:
-	$(eval debug_mode := DEBUG_MODE=true)
+#debug: set_debug build
+#set_debug:
+#	$(eval debug_mode := DEBUG_MODE=true)
 
 
-set_legacy:
-	$(eval legacy_mode := LEGACY=true)
-
-
-$(full):
+$(full): $(all_files)
 	@mkdir -p $(dir $@)
 	@echo -n Creating $@...
 	@echo $(out_wrap_license) > $@
@@ -80,7 +79,8 @@ $(full):
 	@echo done
 
 
-$(compiled_legacy): $(full) set_legacy
+$(compiled_legacy): $(full)
+	$(eval legacy_mode := LEGACY=true)
 	@echo -n Compiling $@...
 	$(closure_params)
 

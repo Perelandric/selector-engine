@@ -3,18 +3,17 @@
 /**
  * Represents a group of selectors.
  *
- * @private
  * @constructor
- * @param {string|Lexer} strTok
+ * @param {string|Lexer} strLex
  */
-function SelectorGroup(strTok) {
-  const isLexer = strTok instanceof Lexer
+function SelectorGroup(strLex) {
+  const isLexer = strLex instanceof Lexer
 
-  if (!isLexer && cache.hasOwnProperty(strTok)) {
-    return cache[strTok]
+  if (!isLexer && cache.hasOwnProperty(strLex)) {
+    return cache[strLex]
   }
 
-  const source = isLexer ? strTok : new Lexer(strTok)
+  const source = isLexer ? /** @type{!Lexer} */(strLex) : new Lexer(strLex)
 
   // The selector engine always does a single DOM selection, so if there's more
   // than one distinct qualified name, it does a 'universal' selection.
@@ -28,7 +27,7 @@ function SelectorGroup(strTok) {
   while ((n = source.nextAfterSpace())) {
     var isComma = n === COMMA_TOKEN
 
-    if (!first && !isComma && DEBUG_MODE) {
+    if (!first && !isComma && DEBUG) {
       throw errInternal
     }
 
@@ -48,23 +47,18 @@ function SelectorGroup(strTok) {
     }
 
     if (!this.globalQualifier) {
-      this.globalQualifier = selObject.tag
+      this.globalQualifier = selObject.qualifier || "*"
 
-    } else if (this.globalQualifier !== selObject.tag) {
+    } else if (this.globalQualifier !== selObject.qualifier) {
       this.globalQualifier = "*"
     }
-
-    if (!this.globalQualifier) {
-      this.globalQualifier = "*"
-    }
-    this.checkName = this.globalQualifier === "*"
 
     this.selectors.push(selObject)
   }
 
   // Cache the selector if it wasn't a Lexer.
   if (!isLexer) {
-    cache[strTok] = this
+    cache[strLex] = this
   }
 }
 
@@ -78,12 +72,15 @@ function SelectorGroup(strTok) {
  * @return {boolean}
  */
 SelectorGroup.prototype.matches = function(root, el) {
+  const qual = this.globalQualifier
+  ,     qualIsName = qual !== "*"
+
   for (var i = 0, len = this.selectors.length; i < len; i+=1) {
-    var sel = this.selectors[i]
-    ,   q = sel.parts[sel.parts.length-1].tag
+    const sel = this.selectors[i]
+    ,     q = qualIsName ? qual : sel.qualifier
 
     // Check the qualifer early to avoid the `compare_selector()` when possible.
-    if ((!this.checkName || !q || q === nodeName(el)) && compare_selector(root, el, sel)) {
+    if ((!q || q === nodeName(el)) && compare_selector(root, el, sel)) {
       return true
     }
   }
@@ -159,7 +156,7 @@ SelectorGroup.prototype.selectFrom = function(root) {
  *
  * @constructor
  * @private
- * @param {Lexer} source input source for this selector
+ * @param {!Lexer} source input source for this selector
  */
 function Selector(source) {
   var startIdx = source._reconsumed ? source.last_tok_i : source.i + 1
@@ -226,7 +223,9 @@ function Selector(source) {
 
     } else {
       source.reconsume()
-      this.parts.push(new Sequence(source, this)) // will raise if none found
+      const seq = new Sequence(source, this)
+      this.parts.push(seq) // will raise if none found
+      this.qualifier = seq.tag
       doCombinator = true
     }
   }
@@ -249,6 +248,7 @@ function Selector(source) {
 Selector.prototype.autoFail = false
 Selector.prototype.hasScope = false
 Selector.prototype.hasPseudoElem = false
+Selector.prototype.qualifier = ""
 
 
 /**

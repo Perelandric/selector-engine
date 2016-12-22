@@ -5,7 +5,7 @@
 
 
 /** @define {boolean} */
-const DEBUG_MODE = false
+const DEBUG = false
 ,     LEGACY = false
 
 const Query = global["Query"] = {}
@@ -34,17 +34,3 @@ Query["all"] = function(elem, selector) {
 Query["matches"] = function(elem, selector) {
   return new SelectorGroup(selector).matches(elem, elem)
 }
-
-
-//const e_proto = (global.HTMLElement || global.Element || {}).prototype
-//if (e_proto && !e_proto.matches) {
-//  e_proto.matches =
-//    e_proto.matchesSelector ||
-//    e_proto.webkitMatchesSelector ||
-//    e_proto.mozMatchesSelector ||
-//    e_proto.msMatchesSelector ||
-//    e_proto.oMatchesSelector ||
-//    function(sel) {
-//      return Query["matches"](/**{!Element}*/(this), sel)
-//    }
-//}

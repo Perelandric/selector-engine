@@ -36,8 +36,8 @@ function countSpacesAt(s, i) {
 
 
 /**
- * @param {!Array<T>} coll
- * @param {!T} target
+ * @param {!Array<*>} coll
+ * @param {!*} target
  * @return {boolean}
  */
 function contains(coll, target) {
@@ -51,7 +51,7 @@ function contains(coll, target) {
 
 
  /**
- * @param {!Element} el
+ * @param {!Node} el
  * @return {string}
  */
 function nodeName(el) {
@@ -135,7 +135,8 @@ function getAttr(el, name) {
  */
 function parentElement(el) {
   if (LEGACY) {
-    return (el = el.parentNode) && el.nodeType === 1 ? el : null
+    const par = /**@type{Element}*/(el.parentNode)
+    return par && par.nodeType === Node.ELEMENT_NODE ? par : null
   } else {
     return el.parentElement
   }
@@ -143,14 +144,17 @@ function parentElement(el) {
 
 
 /**
- * @param {!Element} el
+ * @param {!Node} el
  * @return {Element}
  */
 function prevElemSib(el) {
   if (LEGACY) {
-    while ((el = el.previousSibling) && el.nodeType !== 1) {
-    }
-    return el
+    let sib = el
+    do {
+      sib = sib.previousSibling
+    } while (sib && sib.nodeType !== Node.ELEMENT_NODE)
+
+    return /**@type{Element}*/(sib)
   } else {
     return el.previousElementSibling
   }
@@ -158,14 +162,17 @@ function prevElemSib(el) {
 
 
 /**
- * @param {!Element} el
+ * @param {!Node} el
  * @return {Element}
  */
 function nextElemSib(el) {
   if (LEGACY) {
-    while ((el = el.nextSibling) && el.nodeType !== 1) {
-    }
-    return el
+    let sib = el
+    do {
+      sib = sib.nextSibling
+    } while (sib && sib.nodeType !== Node.ELEMENT_NODE)
+
+    return /**@type{Element}*/(sib)
   } else {
     return el.nextElementSibling
   }
@@ -173,14 +180,16 @@ function nextElemSib(el) {
 
 
 /**
- * @param {!Element} el
+ * @param {!Node} el
  * @return {Element}
  */
 function firstElemChild(el) {
   if (LEGACY) {
-    return el.firstChild && el.firstChild.nodeType !== 1 ?
-            nextElemSib(el.firstChild) :
-            el.firstChild
+    if (el.firstChild && el.firstChild.nodeType !== Node.ELEMENT_NODE) {
+      return nextElemSib(el.firstChild)
+    } else {
+      return /**@type{Element}*/(el.firstChild)
+    }
   } else {
     return el.firstElementChild
   }
@@ -188,14 +197,16 @@ function firstElemChild(el) {
 
 
 /**
- * @param {!Element} el
+ * @param {!Node} el
  * @return {Element}
  */
 function lastElemChild(el) {
   if (LEGACY) {
-    return el.lastChild && el.lastChild.nodeType !== 1 ?
-            prevElemSib(el.lastChild) :
-            el.lastChild
+    if (el.lastChild && el.lastChild.nodeType !== Node.ELEMENT_NODE) {
+      return prevElemSib(el.lastChild)
+    } else {
+      return /**@type{Element}*/(el.lastChild)
+    }
   } else {
     return el.lastElementChild
   }

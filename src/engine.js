@@ -40,20 +40,22 @@ function compare_selector(root, el, selector) {
   for (var j = selector.parts.length-1, combinator = 0; j > -1; j-=1) {
     var part = selector.parts[j]
     ,   haltOnFail = false
+    ,   currEl = el
 
     if (part instanceof Sequence) {
       switch (combinator) {
       case 0:                     haltOnFail = true; break
       case COMBINATOR_CHILD:      haltOnFail = true; /*falls through*/
-      case COMBINATOR_DESCENDANT: el = parentElement(el); break
+      case COMBINATOR_DESCENDANT: currEl = parentElement(el); break
       case COMBINATOR_ADJACENT:   haltOnFail = true; /*falls through*/
-      case COMBINATOR_GENERAL:    el = prevElemSib(el); break
-      default: if (DEBUG_MODE) { throw errInternal }
+      case COMBINATOR_GENERAL:    currEl = prevElemSib(el); break
+      default: if (DEBUG) { throw errInternal }
       }
 
-      if (!el) {
+      if (!currEl) {
         return false
       }
+      el = currEl
 
       if (compare_sequence(root, el, part)) {
         continue
@@ -91,7 +93,7 @@ function compare_sequence(root, el, seq) {
     return false
   }
 
-  for (var i = 0, sequence = seq.sequence; i < seq.length; i++) {
+  for (var i = 0, sequence = seq.sequence; i < sequence.length; i++) {
     var simple = sequence[i]
 
     switch (simple.kind) {
@@ -114,11 +116,11 @@ function compare_sequence(root, el, seq) {
     case PSEUDO_FUNCTION_TOKEN:
       switch (simple.subKind) {
       case NOT_TOKEN:
-        if (!simple.value["matches"](el)) { continue }
+        if (!simple.value["matches"](root, el)) { continue }
         return false
 
       case MATCHES_TOKEN:
-        if (simple.value["matches"](el)) { continue }
+        if (simple.value["matches"](root, el)) { continue }
         return false
 
       case NTH_CHILD_TOKEN:
@@ -190,7 +192,7 @@ function compare_sequence(root, el, seq) {
       }
     }
 
-    if (DEBUG_MODE) {
+    if (DEBUG) {
       throw errInternal // Everything above should return or continue
     }
   }
@@ -257,10 +259,13 @@ function isNth(el, simple, nn, fromEnd) {
     return false
   }
 
-  var idx = 1-simple.value[1] // 1-based index, less the offset
+  let idx = 1-simple.value[1] // 1-based index, less the offset
   ,   curr = fromEnd ? lastElemChild(el.parentNode) : firstElemChild(el.parentNode)
 
   while (curr !== el /*&& idx <= cap*/) {
+    // `curr` will never be `null` because the traversal will find `el` first.
+    curr = /** @type{!Node} */(curr)
+
     if (!nn || nodeName(curr) === nn) {
       idx += 1
     }

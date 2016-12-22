@@ -76,7 +76,7 @@ const errInvalidSelector = new Error("Invalid selector")
  * @constructor
  * @private
  * @param {(string|number)} kind
- * @param {string=} value
+ * @param {(string|number|!SelectorGroup)=} value
  * @param {*=} subKind
  */
 function Token(kind, value, subKind) {
@@ -112,7 +112,6 @@ Token.prototype.b = 0
 
 /**
  * @constructor
- * @private
  * @param {string|Lexer} source
  * @param {string=} endChar
  * @param {boolean=} prevent_not
@@ -145,7 +144,7 @@ const arrEmptyString = [""]
 
 
 /**
- * @return {Token}
+ * @return {Token|string|number}
  */
 Lexer.prototype.next = function() {
   if (this._reconsumed) {
@@ -343,14 +342,14 @@ Lexer.prototype.getPseudoFunction = function(name) {
 
 
 Lexer.prototype.reconsume = function() {
-  if (DEBUG_MODE && this._reconsumed) {
+  if (DEBUG && this._reconsumed) {
     throw errInternal
   }
   this._reconsumed = true
 }
 
 /**
- * @return {Token}
+ * @return {Token|string|number}
  */
 Lexer.prototype.nextAfterSpace = function() {
   while (this.next() === WHITESPACE_TOKEN) {
@@ -401,7 +400,7 @@ Lexer.prototype.makeNth = function(n) {
       b = +bStr
     }
 
-    if (DEBUG_MODE && (isNaN(a) || isNaN(b))) {
+    if (DEBUG && (isNaN(a) || isNaN(b))) {
       throw errInternal
     }
   }

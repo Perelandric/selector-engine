@@ -116,11 +116,11 @@ function compare_sequence(root, el, seq) {
     case PSEUDO_FUNCTION_TOKEN:
       switch (simple.subKind) {
       case NOT_TOKEN:
-        if (!simple.value["matches"](root, el)) { continue }
+        if (!simple.value["matches"](root, el, true)) { continue }
         return false
 
       case MATCHES_TOKEN:
-        if (simple.value["matches"](root, el)) { continue }
+        if (simple.value["matches"](root, el, true)) { continue }
         return false
 
       case NTH_CHILD_TOKEN:

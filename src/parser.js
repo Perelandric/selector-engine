@@ -69,18 +69,17 @@ function SelectorGroup(strLex) {
  *
  * @param {!Element|!Document} root
  * @param {!Element} el
+ * @param {boolean} checkQualName
  * @return {boolean}
  */
-SelectorGroup.prototype.matches = function(root, el) {
-  const qual = this.globalQualifier
-  ,     qualIsName = qual !== "*"
-
+SelectorGroup.prototype.matches = function(root, el, checkQualName) {
   for (var i = 0, len = this.selectors.length; i < len; i+=1) {
     const sel = this.selectors[i]
-    ,     q = qualIsName ? qual : sel.qualifier
+    ,     q = sel.qualifier
 
     // Check the qualifer early to avoid the `compare_selector()` when possible.
-    if ((!q || q === nodeName(el)) && compare_selector(root, el, sel)) {
+    if ((!checkQualName || !q || q === nodeName(el)) &&
+      compare_selector(root, el, sel)) {
       return true
     }
   }
@@ -98,6 +97,7 @@ SelectorGroup.prototype.matches = function(root, el) {
  */
 SelectorGroup.prototype.selectFirstFrom = function(root) {
   const p = root.getElementsByTagName(this.globalQualifier)
+  ,     checkQualName = this.globalQualifier === "*"
 
   for (var i = 0, len = p.length; i < len; i+=1) {
     if (needCommentFilter && p[i].nodeType !== 1) {
@@ -105,7 +105,7 @@ SelectorGroup.prototype.selectFirstFrom = function(root) {
     }
 
     // If not an element, or an element but not a match, try the next elem
-    if (this.matches(root, p[i])) {
+    if (this.matches(root, p[i], checkQualName)) {
       return p[i]
     }
   }
@@ -125,7 +125,8 @@ SelectorGroup.prototype.selectFirstFrom = function(root) {
  */
 SelectorGroup.prototype.selectFrom = function(root) {
   const p = root.getElementsByTagName(this.globalQualifier)
-  const resArr = []
+  ,     checkQualName = this.globalQualifier === "*"
+  ,     resArr = []
 
   // TODO: Ultimately want to optimize for `gEBI`, `gEBCN`, `gEBTN`, `:root`
   // when the selector consists entirely of one of those.
@@ -136,7 +137,7 @@ SelectorGroup.prototype.selectFrom = function(root) {
     }
 
     // If not an element, or an element but not a match, try the next elem
-    if (this.matches(root, p[i])) {
+    if (this.matches(root, p[i], checkQualName)) {
       resArr.push(p[i])
     }
   }

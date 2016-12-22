@@ -18,13 +18,14 @@ test_js			:= test/test.js
 # target files
 base						:= lib/selector-engine
 full						:= $(base).js
+full_no_wrap		:= $(base)-no-wrap.js
 compiled				:= $(base).min.js
 compiled_legacy	:= $(base)-legacy.min.js
 gzipped					:= $(compiled).gz
 gzipped_legacy	:= $(compiled_legacy).gz
 
 # compiler settings
-debug_mode	:= DEBUG_MODE=false
+debug_mode	:= DEBUG=false
 legacy_mode	:= LEGACY=false
 out_wrap_license := "/* selector-engine | (c) 2016 Perelandric | MIT License */"
 out_wrap_open := ";(function(global) {"
@@ -54,10 +55,13 @@ closure_params = @java -jar '$(CLOSURE)' \
 
 # Rules
 
-.PHONY: all force test clean
+.PHONY: all test clean
 
 
-all: $(compiled) $(compiled_legacy) sizes test
+all: $(compiled) $(compiled_legacy) no_wrap sizes test
+
+
+no_wrap: $(full_no_wrap)
 
 
 # Force a full make to take place by first removing generated files
@@ -66,7 +70,7 @@ force: clean all
 
 #debug: set_debug build
 #set_debug:
-#	$(eval debug_mode := DEBUG_MODE=true)
+#	$(eval debug_mode := DEBUG=true)
 
 
 $(full): $(all_files)
@@ -76,6 +80,13 @@ $(full): $(all_files)
 	@echo $(out_wrap_open) >> $@
 	@cat $(all_files) >> $@
 	@echo -n $(out_wrap_close) >> $@
+	@echo done
+
+
+$(full_no_wrap): $(all_files)
+	@mkdir -p $(dir $@)
+	@echo -n Creating $@...
+	@cat $(all_files) >> $@
 	@echo done
 
 
@@ -93,12 +104,16 @@ $(compiled): $(full)
 # This is just to get the size of the gzipped file, which is removed
 sizes:
 	@gzip --keep $(compiled) $(compiled_legacy);
-	@stat --printf="%-40n: %5s\n" $(full) $(compiled_legacy) $(compiled) $(gzipped_legacy) $(gzipped)
+	@stat --printf="%-40n: %5s\n" $(full) $(full_no_wrap) $(compiled_legacy) $(compiled) $(gzipped_legacy) $(gzipped)
 	@rm $(gzipped) $(gzipped_legacy);
 
 
 test:
 	@node $(test_js)
+
+
+debug:
+	@node debug $(test_js)
 
 
 #lint:

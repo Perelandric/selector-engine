@@ -157,8 +157,8 @@ Lexer.prototype.next = function() {
     return this.curr // May have been manually set to `null` below
   }
 
-  var r = getChar(this.sel, this.i+=1)
-  ,   temp = ""
+  const r = getChar(this.sel, this.i+=1)
+  let temp = ""
   ,   parts
 
   this.last_tok_i = this.i
@@ -186,16 +186,15 @@ Lexer.prototype.next = function() {
 
   // Pseudo
   case ':':
-    var verifyPseudoElem = false
-    ,   name = ""
+    const verifyPseudoElem = getChar(this.sel, this.i + 1) === ':'
 
-    if (getChar(this.sel, this.i + 1) === ':') {
+    if (verifyPseudoElem) {
       this.i+=1 // Discard
-      verifyPseudoElem = true
     }
 
-    name = (re_consumeName.exec(
-      this.sel.slice(this.i+1)) || arrEmptyString)[0].toLowerCase()
+    const name = (
+      re_consumeName.exec(this.sel.slice(this.i + 1)) || arrEmptyString
+    )[0].toLowerCase()
 
     this.i += name.length
 
@@ -254,7 +253,7 @@ Lexer.prototype.next = function() {
 
   // ID, CLASS, TAG or Whitespace
   default:
-    var t = countSpacesAt(this.sel, this.i)
+    let t = countSpacesAt(this.sel, this.i)
 
     if (t > 0) {
       this.i += t-1
@@ -364,7 +363,7 @@ Lexer.prototype.nextAfterSpace = function() {
  * @return {!Token}
  */
 Lexer.prototype.makeNth = function(n) {
-  var a = 0
+  let a = 0
   ,   b = 0
 
   const parts = re_makeNth.exec(this.sel.slice(this.i+1))

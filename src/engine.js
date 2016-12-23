@@ -37,9 +37,10 @@ const needCommentFilter = LEGACY ?
  */
 function compare_selector(root, el, selector) {
   // Process starting at the end so that we're doing a RtoL evaluation.
-  for (var j = selector.parts.length-1, combinator = 0; j > -1; j-=1) {
-    var part = selector.parts[j]
-    ,   haltOnFail = false
+  for (let j = selector.parts.length-1, combinator = 0; j > -1; j-=1) {
+    const part = selector.parts[j]
+
+    let haltOnFail = false
     ,   currEl = el
 
     if (part instanceof Sequence) {
@@ -93,8 +94,8 @@ function compare_sequence(root, el, seq) {
     return false
   }
 
-  for (var i = 0, sequence = seq.sequence; i < sequence.length; i++) {
-    var simple = sequence[i]
+  for (let i = 0, sequence = seq.sequence; i < sequence.length; i++) {
+    const simple = sequence[i]
 
     switch (simple.kind) {
     case CLASS_TOKEN:
@@ -140,7 +141,7 @@ function compare_sequence(root, el, seq) {
         return false
 
       case LANG_TOKEN:
-        var tempEl = el
+        let tempEl = el
         while (tempEl && !tempEl.lang) { tempEl = tempEl.parentNode }
 
         if (tempEl && dashMatch(tempEl.lang, simple.value)) { continue }
@@ -151,7 +152,7 @@ function compare_sequence(root, el, seq) {
     // Attribute selectors
     case ATTR_TOKEN:
     case ATTR_INSENSITIVE_TOKEN:
-      var attrVal = getAttr(el, simple.name)
+      let attrVal = getAttr(el, simple.name)
       if (attrVal == null) {
         return false
       }
@@ -223,7 +224,7 @@ function dashMatch(target, pattern) {
  * @return {!boolean}
  */
 function fieldMatch(target, pattern) {
-  var idx = 0
+  let idx = 0
 
   while ((idx = target.indexOf(pattern, idx)) !== -1) {
     if (!countSpacesAt(target, idx+pattern.length)) { // Fail, non-space after
@@ -362,7 +363,7 @@ const pseudoClassFns = {
       return el.contains(hoverHelper)
     }
 
-    var helper = hoverHelper
+    let helper = hoverHelper
     do {
       if (el === helper) {
         return true
@@ -380,9 +381,9 @@ const pseudoClassFns = {
 
       Would there be problems with other handlers firing?
 
-      var body = document.body
+      const body = document.body
       if (body) {
-        var sib = body.nextSibling
+        let sib = body.nextSibling
         ,   par = body.parentNode
         ,   prev_handler = window.onmouseover
 
@@ -434,7 +435,7 @@ const pseudoClassFns = {
 
 
 
-var needHoverHelperSetup = true
+let needHoverHelperSetup = true
 ,   hoverHelper = null
 
 /*

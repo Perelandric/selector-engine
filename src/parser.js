@@ -20,12 +20,12 @@ function SelectorGroup(strLex) {
   this.globalQualifier = ""
   this.selectors = []
 
-  var first = true
+  let first = true
   ,   n
 
   // Continue to compile if any remain, and check `el` at the same time
   while ((n = source.nextAfterSpace())) {
-    var isComma = n === COMMA_TOKEN
+    const isComma = n === COMMA_TOKEN
 
     if (!first && !isComma && DEBUG) {
       throw errInternal
@@ -73,7 +73,7 @@ function SelectorGroup(strLex) {
  * @return {boolean}
  */
 SelectorGroup.prototype.matches = function(root, el, checkQualName) {
-  for (var i = 0, len = this.selectors.length; i < len; i+=1) {
+  for (let i = 0, len = this.selectors.length; i < len; i+=1) {
     const sel = this.selectors[i]
     ,     q = sel.qualifier
 
@@ -99,7 +99,7 @@ SelectorGroup.prototype.selectFirstFrom = function(root) {
   const p = root.getElementsByTagName(this.globalQualifier)
   ,     checkQualName = this.globalQualifier === "*"
 
-  for (var i = 0, len = p.length; i < len; i+=1) {
+  for (let i = 0, len = p.length; i < len; i+=1) {
     if (needCommentFilter && p[i].nodeType !== 1) {
       continue
     }
@@ -131,7 +131,7 @@ SelectorGroup.prototype.selectFrom = function(root) {
   // TODO: Ultimately want to optimize for `gEBI`, `gEBCN`, `gEBTN`, `:root`
   // when the selector consists entirely of one of those.
 
-  for (var i = 0, len = p.length; i < len; i+=1) {
+  for (let i = 0, len = p.length; i < len; i+=1) {
     if (needCommentFilter && p[i].nodeType !== 1) {
       continue
     }
@@ -160,8 +160,8 @@ SelectorGroup.prototype.selectFrom = function(root) {
  * @param {!Lexer} source input source for this selector
  */
 function Selector(source) {
-  var startIdx = source._reconsumed ? source.last_tok_i : source.i + 1
-  ,   endIdx = source.sel.indexOf(source.endChar || ',', startIdx)
+  const startIdx = source._reconsumed ? source.last_tok_i : source.i + 1
+  let endIdx = source.sel.indexOf(source.endChar || ',', startIdx)
 
   if (endIdx === -1) {
     endIdx = source.sel.length
@@ -176,14 +176,14 @@ function Selector(source) {
     return selCache[potentialSel]
   }
 
-  var doCombinator = false
+  let doCombinator = false
   ,   n
 
   this.parts = []
 
   while ((n = source.next())) {
     // Track if whitespace was found in case it's a descendant combinator.
-    var isSpace = n === WHITESPACE_TOKEN
+    const isSpace = n === WHITESPACE_TOKEN
 
     if (isSpace) {
       n = source.nextAfterSpace()
@@ -264,7 +264,7 @@ Selector.prototype.qualifier = ""
 function Sequence(source, selector) {
   this.sequence = []
 
-  var n = source.nextAfterSpace()
+  let n = source.nextAfterSpace()
 
   if (!n || n === COMMA_TOKEN) {
     throw errInvalidSelector

@@ -19,7 +19,7 @@ function getChar(s, i) {
  * @return {number}
  */
 function countSpacesAt(s, i) {
-  var res = 0
+  let res = 0
 
   for (;;) {
     switch((getChar(s, i+res) || "")) {
@@ -41,7 +41,7 @@ function countSpacesAt(s, i) {
  * @return {boolean}
  */
 function contains(coll, target) {
-  for (var i = 0, len = coll.length; i < len; i+=1) {
+  for (let i = 0, len = coll.length; i < len; i+=1) {
     if (coll[i] === target) {
       return true
     }
@@ -57,7 +57,7 @@ function contains(coll, target) {
 function nodeName(el) {
   if (LEGACY) {
     /*
-    var n = el.nodeName.toUpperCase()
+    const n = el.nodeName.toUpperCase()
 
     if (needTagFix && getChar(n, 0) === '/') {
       return n.slice(1)
@@ -150,9 +150,7 @@ function parentElement(el) {
 function prevElemSib(el) {
   if (LEGACY) {
     let sib = el
-    do {
-      sib = sib.previousSibling
-    } while (sib && sib.nodeType !== Node.ELEMENT_NODE)
+    while ((sib = sib.previousSibling) && sib.nodeType !== Node.ELEMENT_NODE){}
 
     return /**@type{Element}*/(sib)
   } else {
@@ -168,9 +166,7 @@ function prevElemSib(el) {
 function nextElemSib(el) {
   if (LEGACY) {
     let sib = el
-    do {
-      sib = sib.nextSibling
-    } while (sib && sib.nodeType !== Node.ELEMENT_NODE)
+    while ((sib = sib.nextSibling) && sib.nodeType !== Node.ELEMENT_NODE){}
 
     return /**@type{Element}*/(sib)
   } else {

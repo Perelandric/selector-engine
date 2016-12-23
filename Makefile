@@ -86,7 +86,7 @@ $(full): $(all_files)
 $(full_no_wrap): $(all_files)
 	@mkdir -p $(dir $@)
 	@echo -n Creating $@...
-	@cat $(all_files) >> $@
+	@cat $(all_files) > $@
 	@echo done
 
 

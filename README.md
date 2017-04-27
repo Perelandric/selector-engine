@@ -19,8 +19,8 @@ To use this project, simply include one of the two files in your project. Use th
 | [selector-engine.min.js](lib/selector-engine.min.js) | [selector-engine-legacy.min.js](/lib/selector-engine-legacy.min.js) |
 | --- | --- |
 | 3.45kb gzipped | 3.67kb gzipped |
-| Takes advantage of more modern features, providing better performance. | Ensures compatibility at a *minor* performance cost. |
-| Supports: - Chrome 4 - Firefox 3.5 - IE 9 - Opera 9.8 - Safari 4 | Supports: - Chrome 1 - Firefox 2 - IE 6 - Opera 9.8 - Safari 1 |
+| Takes advantage of modern features, providing better performance. | Ensures compatibility at a minor performance cost. |
+| Support: <ul><li>Chrome 4<li>Firefox 3.5<li>IE 9<li>Opera 9.8<li>Safari 4</ul> | Support: <ul><li>Chrome 1<li>Firefox 2<li>IE 6<li>Opera 9.8<li>Safari 1 |
 
 
 ## Examples
@@ -65,7 +65,7 @@ There are some rare cases where legacy support at that level is genuinely needed
 ### Will you provide support for custom selectors?
 No, for the following reasons:
 - Adhering to standards makes code more portable and future proof. Code written for non-standard features can only be used where that library will be accepted as a dependency, which isn't always the case.
-- For the same reason that developers often avoid extending host prototypes with custom methods, we avoid it with selectors. If custom selectors are added, they can conflict with future implementations of new standards. They can also conflict with additions by other libraries that use this library.
+- For the same reason that developers avoid extending host prototypes, we avoid it with selectors. If custom selectors are added, they may conflict with future implementations of new standards. They may also conflict with additions by other libraries that use this library.
 - The standard selectors provide quite a lot of functionality, and like regular expressions, they're useful and powerful but don't need to be the solution to every problem.
 
 ### How can I contribute?
